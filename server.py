@@ -13,7 +13,7 @@ def getUser(name):
 
 @app.route('/api/user/preferences/<name>', methods=['GET'])
 def getPreferences(name):
-    return userApi.getUserPreferences(name)
+    return userApi.getUserPreferences("wouter")
 
 
 @app.route('/api/categories', methods=['GET'])

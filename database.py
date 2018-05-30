@@ -3,7 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 
-conn = sqla.create_engine('mysql+pymysql://tester:tester@localhost/project?host=localhost?port=3306')
+#conn = sqla.create_engine('mysql+pymysql://tester:tester@localhost/project?host=localhost?port=3307')
+conn = sqla.create_engine('mysql+pymysql://root:mysqlSet33@localhost/project')
 Base = declarative_base()
 
 class User(Base):
@@ -15,7 +16,7 @@ class User(Base):
     password = sqla.Column('password', sqla.VARCHAR(64))
     country = sqla.Column('country', sqla.VARCHAR(64))
 
-    preference = relationship('Preference', secondary="preference_user")
+    preference = relationship('Category', secondary="preference_user")
     favorite_place = relationship('Place', secondary="favorite_place")
     favorite_event = relationship('Event', secondary="favorite_event")
 
@@ -24,14 +25,14 @@ class Friend(Base):
     username1 = sqla.Column('username1', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
     username2 = sqla.Column('username2', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
 
-class Preference(Base):
-    __tablename__ = 'preference'
+class Category(Base):
+    __tablename__ = 'category'
     id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
     name = sqla.Column('name', sqla.VARCHAR(64))
 
 class Preference_User(Base):
     __tablename__ = 'preference_user'
-    preference_id = sqla.Column('preference_id', sqla.Integer, sqla.ForeignKey("preference.id"), primary_key=True)
+    category_id = sqla.Column('category_id', sqla.Integer, sqla.ForeignKey("category.id"), primary_key=True)
     user_username = sqla.Column('user_username', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
 
 class Place(Base):
@@ -69,7 +70,7 @@ class Persister():
         return self.session.query(User).filter(User.username == name).first()
 
     def getCategories(self):
-        return self.session.query(Preference).all()
+        return self.session.query(Category).all()
 
     def __init__(self):
         Session = sessionmaker(bind=conn)
