@@ -1,7 +1,8 @@
-
-from flask import Flask, jsonify, render_template, request, redirect, url_for
-import sys
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import userApi, eventApi, categoryApi, registerForm, login
+import registerForm, login
+import time
+import sys
 
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
@@ -10,14 +11,14 @@ app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 def loginPageHandler():
     if request.method == 'POST':
         if request.form['submit'] == 'register':
-             registerForm.registerSubmit(request.form)
-             return render_template('index.html')
+            registerForm.registerSubmit(request.form)
+            return render_template('index.html')
         elif request.form['submit'] == 'login':
-             check = login.loginUser(request.form)
-             if check:
+            check = login.loginUser(request.form)
+            if check:
                 return redirect(url_for('profile'))
-             else:
-                 return render_template('index.html')
+            else:
+                return render_template('index.html')
     else:
         return "false request"
 
@@ -75,6 +76,10 @@ def getCategories():
 def event():
 
     return eventApi.postEvent(request.form)
+
+@app.route('/profile')
+def profile():
+    return render_template('index.html')
 
 
 @app.route('/profile')

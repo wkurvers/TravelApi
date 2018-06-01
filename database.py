@@ -66,6 +66,12 @@ class Favorite_Event(Base):
     event_id = sqla.Column('event_id', sqla.Integer, sqla.ForeignKey("event.id"), primary_key=True)
 
 class Persister():
+    def getPassword(self, password):
+        return self.session.query(User).filter(User.password == password).first()
+
+    def getEmail(self,email):
+        return self.session.query(User).filter(User.email == email).first()
+
     def persist_object(self, obj):
         self.session.add(obj)
         self.session.commit()
