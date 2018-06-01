@@ -2,9 +2,9 @@ import sqlalchemy as sqla
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
+import sys
 
-#conn = sqla.create_engine('mysql+pymysql://tester:tester@localhost/project?host=localhost?port=3307')
-conn = sqla.create_engine('mysql+pymysql://root:mysqlSet33@localhost/project')
+conn = sqla.create_engine('mysql+pymysql://tester:tester@localhost/project?host=localhost?port=3306')
 Base = declarative_base()
 
 class User(Base):
@@ -16,7 +16,7 @@ class User(Base):
     password = sqla.Column('password', sqla.VARCHAR(64))
     country = sqla.Column('country', sqla.VARCHAR(64))
 
-    preference = relationship('Category', secondary="preference_user")
+    preference = relationship('Category', secondary="preference_user", backref='preference')
     favorite_place = relationship('Place', secondary="favorite_place")
     favorite_event = relationship('Event', secondary="favorite_event")
 
@@ -29,6 +29,7 @@ class Category(Base):
     __tablename__ = 'category'
     id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
     name = sqla.Column('name', sqla.VARCHAR(64))
+    user = relationship('User', secondary="preference_user")
 
 class Preference_User(Base):
     __tablename__ = 'preference_user'
@@ -66,14 +67,59 @@ class Persister():
         self.session.add(obj)
         self.session.commit()
 
+    def remove_object(self, obj):
+        self.session.delete(obj)
+        self.session.commit()
+
     def getUser(self, name):
         return self.session.query(User).filter(User.username == name).first()
 
     def getCategories(self):
         return self.session.query(Category).all()
 
+    def removePreference(self, id, name):
+        preference = self.session.query(Preference_User)\
+            .filter(Preference_User.user_username==name)\
+            .filter(Preference_User.category_id==int(id))\
+            .first()
+        self.session.delete(preference)
+        self.session.commit()
+
+    def updateUserInfo(self, form):
+        print(form.get('username'), file=sys.stderr)
+        user = self.session.query(User)\
+            .filter(User.username == form.get('username'))\
+            .first()
+
+        user.firstName = form.get('firstName')
+        user.lastName = form.get('lastName')
+        user.country = form.get('country')
+        user.email = form.get('email')
+
+        self.session.commit()
+
+
+    def removeFavoritePlace(self, id, name):
+        favorite = self.session.query(Preference_User) \
+        .filter(Favorite_Place.user_username == name) \
+        .filter(Favorite_Place.place_id == id) \
+        .first()
+        self.session.delete(favorite)
+        self.session.commit()
+
+
+    def removeFavoriteEvent(self, id, name):
+        favorite = self.session.query(Preference_User) \
+            .filter(Favorite_Event.user_username == name) \
+            .filter(Favorite_Event.event_id == id) \
+            .first()
+        self.session.delete(favorite)
+        self.session.commit()
+
+
     def __init__(self):
         Session = sessionmaker(bind=conn)
         self.session = Session()
+
 
 Base.metadata.create_all(conn)
