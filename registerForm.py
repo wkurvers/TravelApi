@@ -12,4 +12,5 @@ def registerSubmit(form):
         password = generate_password_hash(form.get('password'),method='sha256'),
         country = form.get('country')
     )
-    persister.persist_object(user)
+
+persister.persist_object(user)

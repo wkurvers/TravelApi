@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for
-import userApi, eventApi, categoryApi
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+import userApi, eventApi, categoryApi, registerForm, login
 import registerForm, login
 import time
+import sys
 
 app = Flask(__name__)
+app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
@@ -72,7 +74,13 @@ def getCategories():
 # Submit event
 @app.route('/event', methods=['POST'])
 def event():
+
     return eventApi.postEvent(request.form)
+
+@app.route('/profile')
+def profile():
+    return render_template('index.html')
+
 
 @app.route('/profile')
 def profile():

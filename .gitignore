@@ -56,3 +56,7 @@ fabric.properties
 workspace.xml
 static
 templates
+
+workspace.xml
+/templates/
+/static/
