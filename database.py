@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 import sys
 
 
-conn = sqla.create_engine('mysql+pymysql://tester:tester@localhost/project?host=localhost?port=3306')
+conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
 
 
 Base = declarative_base()
