@@ -1,9 +1,24 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 import userApi, eventApi, categoryApi
+import registerForm, login
 import time
 
 app = Flask(__name__)
 
+@app.route('/login', methods=['POST'])
+def loginPageHandler():
+    if request.method == 'POST':
+        if request.form['submit'] == 'register':
+            registerForm.registerSubmit(request.form)
+            return render_template('index.html')
+        elif request.form['submit'] == 'login':
+            check = login.loginUser(request.form)
+            if check:
+                return redirect(url_for('profile'))
+            else:
+                return render_template('index.html')
+    else:
+        return "false request"
 
 @app.route('/api/user/favoriteEvent', methods=['POST', 'DELETE'])
 def favoriteEvent(name, id):
@@ -58,6 +73,10 @@ def getCategories():
 @app.route('/event', methods=['POST'])
 def event():
     return eventApi.postEvent(request.form)
+
+@app.route('/profile')
+def profile():
+    return render_template('index.html')
 
 
 @app.route('/', defaults={'path': ''})
