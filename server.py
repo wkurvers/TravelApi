@@ -1,10 +1,24 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, redirect, url_for
 import sys
-import login as login
-import userApi, eventApi, categoryApi
+import userApi, eventApi, categoryApi, registerForm, login
 
 app = Flask(__name__)
+app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 
+@app.route('/login', methods=['POST'])
+def loginPageHandler():
+    if request.method == 'POST':
+        if request.form['submit'] == 'register':
+             registerForm.registerSubmit(request.form)
+             return render_template('index.html')
+        elif request.form['submit'] == 'login':
+             check = login.loginUser(request.form)
+             if check:
+                return redirect(url_for('profile'))
+             else:
+                 return render_template('index.html')
+    else:
+        return "false request"
 
 @app.route('/api/user/<name>', methods=['GET'])
 def getUser(name):
@@ -35,9 +49,7 @@ def event():
 
 @app.route('/profile')
 def profile():
-    if not login.check_login():
-        print("Not logged in!", file=sys.stderr)
-        return "Not logged in!"
+    return render_template('index.html')
 
 
 @app.route('/', defaults={'path': ''})

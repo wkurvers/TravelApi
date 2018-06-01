@@ -3,8 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 
-#conn = sqla.create_engine('mysql+pymysql://tester:tester@localhost/project?host=localhost?port=3307')
-conn = sqla.create_engine('mysql+pymysql://root:mysqlSet33@localhost/project')
+conn = sqla.create_engine('mysql+pymysql://root:''@localhost/project?host=localhost?port=3306')
+# conn = sqla.create_engine('mysql+pymysql://root:mysqlSet33@localhost/project')
 Base = declarative_base()
 
 class User(Base):
@@ -68,6 +68,12 @@ class Persister():
 
     def getUser(self, name):
         return self.session.query(User).filter(User.username == name).first()
+
+    def getPassword(self, password):
+        return self.session.query(User).filter(User.password == password).first()
+
+    def getEmail(self,email):
+        return self.session.query(User).filter(User.email == email).first()
 
     def getCategories(self):
         return self.session.query(Category).all()
