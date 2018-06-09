@@ -1,10 +1,13 @@
 
 from flask import Flask, jsonify, render_template, request, redirect, url_for
 import sys
-import userApi, eventApi, categoryApi, registerForm, login
+import userApi, eventApi, categoryApi, registerForm, loginForm
+import os
+from flask_login import LoginManager
 
 app = Flask(__name__)
-app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+login = LoginManager(app)
+app.secret_key = os.urandom(24)
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
@@ -13,10 +16,10 @@ def loginPageHandler():
              registerForm.registerSubmit(request.form)
              return render_template('index.html')
         elif request.form['submit'] == 'login':
-             check = login.loginUser(request.form)
-             if check:
+             if loginForm.loginCheck(request.form):
                 return redirect(url_for('profile'))
              else:
+                 print('faal', file=sys.stderr)
                  return render_template('index.html')
     else:
         return "false request"

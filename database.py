@@ -1,8 +1,13 @@
+
+
 import sqlalchemy as sqla
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
+from server import login
 import sys
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
@@ -16,8 +21,20 @@ class User(Base):
     email = sqla.Column('email', sqla.VARCHAR(64))
     firstName = sqla.Column('firstName', sqla.VARCHAR(64))
     lastName = sqla.Column('lastName', sqla.VARCHAR(64))
-    password = sqla.Column('password', sqla.VARCHAR(64))
+    password = sqla.Column('password', sqla.VARCHAR(128))
     country = sqla.Column('country', sqla.VARCHAR(64))
+
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return self.username
 
     preference = relationship('Category', secondary="preference_user", backref='preference')
     favorite_place = relationship('Place', secondary="favorite_place")
@@ -77,8 +94,8 @@ class Persister():
     def getUser(self, name):
         return self.session.query(User).filter(User.username == name).first()
 
-    def getPassword(self, password):
-        return self.session.query(User).filter(User.password == password).first()
+    def getPassword(self,email):
+        return self.session.query(User.password).filter(User.email == email).first()
 
     def getEmail(self,email):
         return self.session.query(User).filter(User.email == email).first()
@@ -106,6 +123,10 @@ class Persister():
         user.email = form.get('email')
 
         self.session.commit()
+
+    @login.user_loader
+    def load_user(self,name):
+     return self.session.query(User).filter(User.username == name).first()
 
 
     def removeFavoritePlace(self, id, name):
