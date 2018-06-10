@@ -1,14 +1,11 @@
 
 
 import sqlalchemy as sqla
+from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
-from server import login
 import sys
-
-from werkzeug.security import generate_password_hash, check_password_hash
-
 
 conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
 
@@ -83,6 +80,7 @@ class Favorite_Event(Base):
     event_id = sqla.Column('event_id', sqla.Integer, sqla.ForeignKey("event.id"), primary_key=True)
 
 class Persister():
+
     def persist_object(self, obj):
         self.session.add(obj)
         self.session.commit()
@@ -94,11 +92,20 @@ class Persister():
     def getUser(self, name):
         return self.session.query(User).filter(User.username == name).first()
 
+    def getUserByEmail(self, email):
+        return self.session.query(User).filter(User.email == email).first()
+
     def getPassword(self,email):
         return self.session.query(User.password).filter(User.email == email).first()
 
+    def getUsername(self,email):
+        return self.session.query(User.username).filter(User.email == email).first()
+
     def getEmail(self,email):
         return self.session.query(User).filter(User.email == email).first()
+
+    def getId(self,email):
+        return self.session.query(User.id).filter(User.email == email).first()
 
     def getCategories(self):
         return self.session.query(Category).all()
@@ -124,10 +131,6 @@ class Persister():
 
         self.session.commit()
 
-    @login.user_loader
-    def load_user(self,name):
-     return self.session.query(User).filter(User.username == name).first()
-
 
     def removeFavoritePlace(self, id, name):
         favorite = self.session.query(Preference_User) \
@@ -146,10 +149,10 @@ class Persister():
         self.session.delete(favorite)
         self.session.commit()
 
-
     def __init__(self):
         Session = sessionmaker(bind=conn)
         self.session = Session()
 
 
 Base.metadata.create_all(conn)
+

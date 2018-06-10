@@ -6,7 +6,6 @@ import time, sys
 
 persister = Persister()
 
-
 def postEvent(form):
     print("post event", file=sys.stderr)
     event = Event(
@@ -20,3 +19,4 @@ def postEvent(form):
     )
     persister.persist_object(event)
     return "success"
+

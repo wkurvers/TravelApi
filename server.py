@@ -3,19 +3,30 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for
 import sys
 import userApi, eventApi, categoryApi, registerForm, loginForm
 import os
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user, login_required
+from database import User
 
 app = Flask(__name__)
-login = LoginManager(app)
 app.secret_key = os.urandom(24)
+login = LoginManager(app)
+login.init_app(app)
+
+
+
+@login.user_loader
+def load_user(user_name):
+    return User
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
+
     if request.method == 'POST':
         if request.form['submit'] == 'register':
              registerForm.registerSubmit(request.form)
              return render_template('index.html')
         elif request.form['submit'] == 'login':
+             if current_user.is_authenticated:
+                 return render_template('index.html')
              if loginForm.loginCheck(request.form):
                 return redirect(url_for('profile'))
              else:
@@ -81,6 +92,7 @@ def event():
 
 
 @app.route('/profile')
+@login_required
 def profile():
     return render_template('index.html')
 
