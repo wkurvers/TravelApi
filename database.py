@@ -12,15 +12,6 @@ conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhos
 Base = declarative_base()
 
 
-class User(Base, UserMixin):
-    __tablename__ = 'user'
-    username = sqla.Column('username', sqla.VARCHAR(64), primary_key=True)
-    email = sqla.Column('email', sqla.VARCHAR(64))
-    firstName = sqla.Column('firstName', sqla.VARCHAR(64))
-    lastName = sqla.Column('lastName', sqla.VARCHAR(64))
-    password = sqla.Column('password', sqla.VARCHAR(128))
-
-
 class Friend(Base):
     __tablename__ = 'friend'
     username1 = sqla.Column('username1', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
