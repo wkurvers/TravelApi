@@ -12,7 +12,7 @@ conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhos
 
 Base = declarative_base()
 
-class User(Base):
+class User(Base, UserMixin):
     __tablename__ = 'user'
     username = sqla.Column('username', sqla.VARCHAR(64), primary_key=True)
     email = sqla.Column('email', sqla.VARCHAR(64))
@@ -21,14 +21,14 @@ class User(Base):
     password = sqla.Column('password', sqla.VARCHAR(128))
     country = sqla.Column('country', sqla.VARCHAR(64))
 
-    def is_authenticated(self):
-        return True
-
-    def is_active(self):
-        return True
-
-    def is_anonymous(self):
-        return False
+    # def is_authenticated(self):
+    #     return True
+    #
+    # def is_active(self):
+    #     return True
+    #
+    # def is_anonymous(self):
+    #     return False
 
     def get_id(self):
         return self.username
