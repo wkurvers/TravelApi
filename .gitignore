@@ -52,11 +52,14 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-.idea/workspace.xml
 workspace.xml
 static
 templates
 
-workspace.xml
+
 /templates/
 /static/
+.idea/misc.xml
+/.idea
+/_p__pychache_/
+

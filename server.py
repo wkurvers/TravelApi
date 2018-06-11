@@ -1,24 +1,37 @@
+import os
+from flask_login import LoginManager, current_user, login_required
+from database import User
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-import userApi, eventApi, categoryApi, registerForm, login
-import registerForm, login
-import time
+import userApi, eventApi, categoryApi, registerForm, loginForm
 import sys
 
+
 app = Flask(__name__)
-app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+app.secret_key = os.urandom(24)
+login = LoginManager(app)
+login.init_app(app)
+
+
+
+@login.user_loader
+def load_user(user_name):
+    return User
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
+
     if request.method == 'POST':
         if request.form['submit'] == 'register':
             registerForm.registerSubmit(request.form)
             return render_template('index.html')
         elif request.form['submit'] == 'login':
-            check = login.loginUser(request.form)
-            if check:
+             if current_user.is_authenticated:
+                 return render_template('index.html')
+             if loginForm.loginCheck(request.form):
                 return redirect(url_for('profile'))
-            else:
-                return render_template('index.html')
+             else:
+                 print('faal', file=sys.stderr)
+                 return render_template('index.html')
     else:
         return "false request"
 
@@ -91,6 +104,7 @@ def event():
     return redirect('/addEvent')
 
 @app.route('/profile')
+@login_required
 def profile():
     return render_template('index.html')
 

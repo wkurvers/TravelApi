@@ -1,10 +1,10 @@
+
+
 import sqlalchemy as sqla
-from sqlalchemy import update
+from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
-import sys
-
 
 conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
 
@@ -25,6 +25,10 @@ class User(Base):
     lastName = sqla.Column('last_name', sqla.VARCHAR(64))
     password = sqla.Column('password', sqla.VARCHAR(64))
     country = sqla.Column('country', sqla.VARCHAR(64))
+
+
+    def get_id(self):
+        return self.username
 
     preference = relationship('Category', secondary="preference_user", backref='preference')
     favorite_place = relationship('Place', secondary="favorite_place")
@@ -72,6 +76,7 @@ class Favorite_Event(Base):
     event_id = sqla.Column('event_id', sqla.Integer, sqla.ForeignKey("event.id"), primary_key=True)
 
 class Persister():
+
     def getPassword(self, password):
         return self.session.query(User).filter(User.password == password).first()
 
@@ -99,11 +104,20 @@ class Persister():
     def getUser(self, name):
         return self.session.query(User).filter(User.username == name).first()
 
-    def getPassword(self, password):
-        return self.session.query(User).filter(User.password == password).first()
+    def getUserByEmail(self, email):
+        return self.session.query(User).filter(User.email == email).first()
+
+    def getPassword(self,email):
+        return self.session.query(User.password).filter(User.email == email).first()
+
+    def getUsername(self,email):
+        return self.session.query(User.username).filter(User.email == email).first()
 
     def getEmail(self,email):
         return self.session.query(User).filter(User.email == email).first()
+
+    def getId(self,email):
+        return self.session.query(User.id).filter(User.email == email).first()
 
     def getCategories(self):
         return self.session.query(Category).all()
@@ -150,10 +164,10 @@ class Persister():
         self.session.delete(favorite)
         self.session.commit()
 
-
     def __init__(self):
         Session = sessionmaker(bind=conn)
         self.session = Session()
 
 
 Base.metadata.create_all(conn)
+
