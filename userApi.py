@@ -1,13 +1,11 @@
 from flask import jsonify
-from database import Persister, Preference_User, Favorite_Event, Favorite_Place
+from database import Persister, Preference_User, Favorite_Event, Favorite_Place, Friend
 
 persister = Persister()
 
 
 def getUserInfo(name):
     data = persister.getUser(name)
-    #   if(data.username == None) or (data.email == None) or (data.email == None) or (data.firstName == None) or (data.lastName == None) or (data.country == None):
-    #     return False
     result = {
         'username': data.username,
         'email': data.email,
@@ -16,6 +14,18 @@ def getUserInfo(name):
         'country': data.country,
     }
     return jsonify(result), 200
+
+
+def getFriends(name):
+    friends = persister.getFriends(name)
+    result = []
+    for user in friends:
+        result.append(user.Friend.username2)
+    return result
+
+
+def addFriend(username, friend):
+    persister.addFriend(username, friend)
 
 
 def updateUserInfo(form):

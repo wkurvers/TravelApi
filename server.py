@@ -22,6 +22,19 @@ def loginPageHandler():
     else:
         return "false request"
 
+
+@app.route('/api/user/friends', methods=['GET', 'POST'])
+def friends():
+    username = request.args.get('name')
+    if request.method == 'GET':
+        friendList = userApi.getFriends(username)
+        return jsonify({"friends": friendList})
+    if request.method == 'POST':
+        friend = request.args.get('friend')
+        userApi.addFriend(username, friend)
+        return redirect('/profile')
+
+
 @app.route('/api/user/favoriteEvent', methods=['POST', 'DELETE'])
 def favoriteEvent(name, id):
     if request.method == 'POST':
@@ -46,8 +59,8 @@ def user(name):
         return user
 
     if request.method == 'POST':
-        #userApi.updateUserInfo(request.form)
-        return redirect('/addEvent')
+        userApi.updateUserInfo(request.form)
+        return redirect('/profile')
 
 
 # Get all preferences of user
@@ -72,15 +85,10 @@ def getCategories():
 
 
 # Submit event
-@app.route('/event', methods=['POST'])
+@app.route('/api/event', methods=['POST'])
 def event():
-
-    return eventApi.postEvent(request.form)
-
-@app.route('/profile')
-def profile():
-    return render_template('index.html')
-
+    eventApi.postEvent(request)
+    return redirect('/addEvent')
 
 @app.route('/profile')
 def profile():
