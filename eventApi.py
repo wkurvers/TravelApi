@@ -1,10 +1,8 @@
 from database import Persister, Event
 import os
-from werkzeug.utils import secure_filename
 import time
 
 persister = Persister()
-
 
 def postEvent(request):
     form = request.form
@@ -14,6 +12,7 @@ def postEvent(request):
         name = str(time.time()).replace(".", "")
         name = name + "." + file.filename.partition(".")[-1]
         file.save(os.path.join('images\events', name))
+
 
     event = Event(
         name=form.get('name'),
@@ -29,3 +28,6 @@ def postEvent(request):
     )
 
     persister.persist_object(event)
+
+    return "success"
+
