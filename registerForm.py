@@ -13,4 +13,4 @@ def registerSubmit(form):
         country = form.get('country')
     )
 
-persister.persist_object(user)
+    persister.persist_object(user)
