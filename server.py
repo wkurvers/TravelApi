@@ -1,10 +1,10 @@
-
-from flask import Flask, render_template, request, redirect, url_for
-import sys
-import userApi, eventApi, categoryApi, registerForm, loginForm
 import os
 from flask_login import LoginManager, current_user, login_required
 from database import User
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+import userApi, eventApi, categoryApi, registerForm, loginForm
+import sys
+
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -22,8 +22,8 @@ def loginPageHandler():
 
     if request.method == 'POST':
         if request.form['submit'] == 'register':
-             registerForm.registerSubmit(request.form)
-             return render_template('index.html')
+            registerForm.registerSubmit(request.form)
+            return render_template('index.html')
         elif request.form['submit'] == 'login':
              if current_user.is_authenticated:
                  return render_template('index.html')
@@ -34,6 +34,19 @@ def loginPageHandler():
                  return render_template('index.html')
     else:
         return "false request"
+
+
+@app.route('/api/user/friends', methods=['GET', 'POST'])
+def friends():
+    username = request.args.get('name')
+    if request.method == 'GET':
+        friendList = userApi.getFriends(username)
+        return jsonify({"friends": friendList})
+    if request.method == 'POST':
+        friend = request.args.get('friend')
+        userApi.addFriend(username, friend)
+        return redirect('/profile')
+
 
 @app.route('/api/user/favoriteEvent', methods=['POST', 'DELETE'])
 def favoriteEvent(name, id):
@@ -59,8 +72,8 @@ def user(name):
         return user
 
     if request.method == 'POST':
-        #userApi.updateUserInfo(request.form)
-        return redirect('/addEvent')
+        userApi.updateUserInfo(request.form)
+        return redirect('/profile')
 
 
 # Get all preferences of user
@@ -85,11 +98,10 @@ def getCategories():
 
 
 # Submit event
-@app.route('/event', methods=['POST'])
+@app.route('/api/event', methods=['POST'])
 def event():
-
-    return eventApi.postEvent(request.form)
-
+    eventApi.postEvent(request)
+    return redirect('/addEvent')
 
 @app.route('/profile')
 @login_required

@@ -53,10 +53,13 @@ fabric.properties
 .idea/httpRequests
 
 workspace.xml
+static
+templates
+
+
 /templates/
 /static/
-/__pycache__/
+.idea/misc.xml
+/.idea
+/_p__pychache_/
 
-__pycache__/loginForm.cpython-36.pyc
-__pycache__/registerForm.cpython-36.pyc
-__pycache__/server.cpython-36.pyc

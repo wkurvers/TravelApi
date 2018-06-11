@@ -1,22 +1,33 @@
-from flask import jsonify
 from database import Persister, Event
-import datetime
-from sqlalchemy.sql import func
-import time, sys
+import os
+import time
 
 persister = Persister()
 
-def postEvent(form):
-    print("post event", file=sys.stderr)
+def postEvent(request):
+    form = request.form
+
+    if request.files['image']:
+        file = request.files['image']
+        name = str(time.time()).replace(".", "")
+        name = name + "." + file.filename.partition(".")[-1]
+        file.save(os.path.join('images\events', name))
+
+
     event = Event(
-        name = form.get('name'),
-        category = form.get('category'),
-        description = form.get('description'),
-        location = form.get('location'),
-        startDate = func.now(),
-        endDate=func.now(),
-        image=str(int(time.time()))
+        name=form.get('name'),
+        category=form.get('category'),
+        description=form.get('description'),
+        location=form.get('location'),
+        startDate=form.get('start_date'),
+        startTime=form.get('start_time'),
+        endDate=form.get('end_date'),
+        endTime=form.get('end_time'),
+        owner=form.get('owner'),
+        image=name
     )
+
     persister.persist_object(event)
+
     return "success"
 
