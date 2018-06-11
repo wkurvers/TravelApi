@@ -60,3 +60,6 @@ templates
 workspace.xml
 /templates/
 /static/
+
+.idea/misc.xml
+/.idea
