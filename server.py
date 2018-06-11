@@ -1,7 +1,8 @@
-
-from flask import Flask, jsonify, render_template, request, redirect, url_for
-import sys
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import userApi, eventApi, categoryApi, registerForm, login
+import registerForm, login
+import time
+import sys
 
 app = Flask(__name__)
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
@@ -10,16 +11,29 @@ app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 def loginPageHandler():
     if request.method == 'POST':
         if request.form['submit'] == 'register':
-             registerForm.registerSubmit(request.form)
-             return render_template('index.html')
+            registerForm.registerSubmit(request.form)
+            return render_template('index.html')
         elif request.form['submit'] == 'login':
-             check = login.loginUser(request.form)
-             if check:
+            check = login.loginUser(request.form)
+            if check:
                 return redirect(url_for('profile'))
-             else:
-                 return render_template('index.html')
+            else:
+                return render_template('index.html')
     else:
         return "false request"
+
+
+@app.route('/api/user/friends', methods=['GET', 'POST'])
+def friends():
+    username = request.args.get('name')
+    if request.method == 'GET':
+        friendList = userApi.getFriends(username)
+        return jsonify({"friends": friendList})
+    if request.method == 'POST':
+        friend = request.args.get('friend')
+        userApi.addFriend(username, friend)
+        return redirect('/profile')
+
 
 @app.route('/api/user/favoriteEvent', methods=['POST', 'DELETE'])
 def favoriteEvent(name, id):
@@ -45,8 +59,8 @@ def user(name):
         return user
 
     if request.method == 'POST':
-        #userApi.updateUserInfo(request.form)
-        return redirect('/addEvent')
+        userApi.updateUserInfo(request.form)
+        return redirect('/profile')
 
 
 # Get all preferences of user
@@ -71,11 +85,10 @@ def getCategories():
 
 
 # Submit event
-@app.route('/event', methods=['POST'])
+@app.route('/api/event', methods=['POST'])
 def event():
-
-    return eventApi.postEvent(request.form)
-
+    eventApi.postEvent(request)
+    return redirect('/addEvent')
 
 @app.route('/profile')
 def profile():

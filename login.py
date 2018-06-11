@@ -18,5 +18,3 @@ def loginUser(form):
         print('logged in', file=sys.stderr)
         session['email'] = emailLogin
         return True
-
-
