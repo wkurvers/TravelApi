@@ -1,5 +1,5 @@
 
-
+import sys
 import sqlalchemy as sqla
 from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
@@ -17,7 +17,7 @@ class Friend(Base):
     username1 = sqla.Column('username1', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
     username2 = sqla.Column('username2', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
 
-class User(Base):
+class User(Base, UserMixin):
     __tablename__ = 'user'
     username = sqla.Column('username', sqla.VARCHAR(64), primary_key=True)
     email = sqla.Column('email', sqla.VARCHAR(64))

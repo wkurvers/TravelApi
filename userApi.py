@@ -4,6 +4,9 @@ from database import Persister, Preference_User, Favorite_Event, Favorite_Place,
 persister = Persister()
 
 
+def getUser(user_name):
+    return persister.getUser(user_name)
+
 def getUserInfo(name):
     data = persister.getUser(name)
     result = {
