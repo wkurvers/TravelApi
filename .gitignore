@@ -62,4 +62,5 @@ templates
 .idea/misc.xml
 /.idea
 /_p__pychache_/
+/__pycache__/
 
