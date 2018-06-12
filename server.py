@@ -12,10 +12,9 @@ login = LoginManager(app)
 login.init_app(app)
 
 
-
 @login.user_loader
 def load_user(user_name):
-    return User
+    return userApi.getUser(user_name)
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
@@ -34,6 +33,16 @@ def loginPageHandler():
                  return render_template('index.html')
     else:
         return "false request"
+
+
+@app.route('/api/loginCheck', methods=['GET'])
+def loginCheck():
+    check = current_user.is_authenticated
+    if check:
+        print(current_user.username, file=sys.stderr)
+        return jsonify({"username": current_user.username})
+    else:
+        return str(None)
 
 
 @app.route('/api/user/friends', methods=['GET', 'POST'])
