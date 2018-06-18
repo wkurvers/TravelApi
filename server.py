@@ -83,6 +83,23 @@ def loginCheck():
     else:
         return str(None)
 
+@app.route('/api/loginName', methods=['GET'])
+def loginName():
+    check = current_user.is_authenticated
+    if check:
+        # print(current_user.username, file=sys.stderr)
+        return jsonify({"yourName": current_user.username})
+    else:
+        return jsonify({"yourName": 'not logged in'})
+
+@app.route('/api/loginEmail', methods=['GET'])
+def loginEmail():
+    check = current_user.is_authenticated
+    if check:
+        return jsonify({"yourEmail": current_user.email})
+    else:
+        return jsonify({"yourEmail": 'blah@blah.com'})
+
 
 @app.route('/api/user/friends', methods=['GET', 'POST'])
 def friends():
