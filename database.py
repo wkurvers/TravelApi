@@ -9,7 +9,8 @@ from passlib.hash import pbkdf2_sha256
 import time, os
 from hashlib import md5
 
-conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
+
+conn = sqla.create_engine('mysql+pymysql://root:@127.0.0.1/project?host=127.0.0.1?port=3306')
 
 
 Base = declarative_base()
@@ -83,6 +84,7 @@ class Favorite_Event(Base):
     event_id = sqla.Column('event_id', sqla.Integer, sqla.ForeignKey("event.id"), primary_key=True)
 
 class Persister():
+
 
     def getPassword(self, password):
         return self.session.query(User).filter(User.password == password).first()
