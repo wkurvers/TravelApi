@@ -5,6 +5,8 @@ from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
+from passlib.hash import pbkdf2_sha256
+import time, os
 
 conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
 
@@ -141,8 +143,50 @@ class Persister():
         user.email = form.get('email')
         password = form.get('password')
         if len(password) > 3:
-            user.password = password
+            user.password = pbkdf2_sha256.hash(password)
         user.country = form.get('country')
+
+        self.session.commit()
+
+    def getEvent(self, id):
+        event = self.session.query(Event) \
+            .filter(Event.id == id) \
+            .first()
+
+        return event
+
+    def updateEvent(self, request):
+        form = request.form
+
+        event = self.session.query(Event)\
+            .filter(Event.id == form.get('eventId'))\
+            .first()
+
+        if event.owner == form.get('owner'):
+            img = ""
+            if request.files.get('image', None):
+                file = request.files.get('image', None)
+                img = str(time.time()).replace(".", "")
+                img = img + "." + file.filename.partition(".")[-1]
+                file.save(os.path.join('images\events', img))
+            if form.get('name'):
+                event.name = form.get('name')
+            if form.get('category'):
+                event.category = form.get('category')
+            if form.get('description'):
+                event.description = form.get('description')
+            if form.get('location'):
+                event.location = form.get('location')
+            if form.get('start_date'):
+                event.startDate = form.get('start_date')
+            if form.get('start_time'):
+                event.startTime = form.get('start_time')
+            if form.get('end_date'):
+                event.endDate = form.get('end_date')
+            if form.get('end_time'):
+                event.endTime = form.get('end_time')
+            if img != "":
+                event.image = img
 
         self.session.commit()
 
