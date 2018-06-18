@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 from passlib.hash import pbkdf2_sha256
 import time, os
+from hashlib import md5
 
 
 conn = sqla.create_engine('mysql+pymysql://root:@127.0.0.1/project?host=127.0.0.1?port=3306')
@@ -32,6 +33,10 @@ class User(Base, UserMixin):
 
     def get_id(self):
         return self.username
+
+    def avatar(self):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s=24'.format(digest)
 
     preference = relationship('Category', secondary="preference_user", backref='preference')
     favorite_place = relationship('Place', secondary="favorite_place")
