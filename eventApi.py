@@ -1,17 +1,19 @@
 from database import Persister, Event
-import os
-import time
+from flask import jsonify
+import os, time, json
 
 persister = Persister()
 
 def postEvent(request):
     form = request.form
 
-    if request.files['image']:
-        file = request.files['image']
+    if request.files.get('image', None):
+        file = request.files.get('image', None)
         name = str(time.time()).replace(".", "")
         name = name + "." + file.filename.partition(".")[-1]
         file.save(os.path.join('images\events', name))
+    else:
+        name = None
 
 
     event = Event(
@@ -30,4 +32,29 @@ def postEvent(request):
     persister.persist_object(event)
 
     return "success"
+
+
+def updateEvent(request):
+    form = request
+
+    persister.updateEvent(request)
+
+    return "success"
+
+
+def getEvent(id):
+    event = persister.getEvent(id)
+
+    result = {
+        'name': event.name,
+        'category': event.category,
+        'description': event.description,
+        'location': event.location,
+        'startDate': event.startDate,
+        'startTime': event.startTime,
+        'endDate': event.endDate,
+        'endTime': event.endTime
+    }
+
+    return json.dumps(result, indent=4, default=str)
 
