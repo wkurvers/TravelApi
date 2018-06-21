@@ -74,6 +74,14 @@ def loginPageHandler():
         return "false request"
 
 
+@app.route('/api/loginValue', methods=['GET'])
+def loginValue():
+    checking = current_user.is_authenticated
+    if checking:
+        return jsonify({"value": True})
+    else:
+        return jsonify({"value": False})
+
 @app.route('/api/loginCheck', methods=['GET'])
 def loginCheck():
     check = current_user.is_authenticated
@@ -83,6 +91,7 @@ def loginCheck():
     else:
         return str(None)
 
+
 @app.route('/logout')
 def logout():
     if current_user.is_authenticated:
@@ -91,13 +100,7 @@ def logout():
     else:
         return redirect('/login')
 
-@app.route('/api/loginValue', methods=['GET'])
-def loginValue():
-    checking = current_user.is_authenticated
-    if checking:
-        return jsonify({"value": True})
-    else:
-        return jsonify({"value": False})
+
 
 @app.route('/api/loginName', methods=['GET'])
 def loginName():
@@ -105,6 +108,13 @@ def loginName():
     if check:
         # print(current_user.username, file=sys.stderr)
         return jsonify({"yourName": current_user.username, "yourEmail": current_user.email})
+    else:
+        return jsonify({
+            "yourName": 'not logged in',
+            "yourEmail": 'blah@blah.com'
+        })
+
+
 
 
 # @app.route('/api/loginEmail', methods=['GET'])

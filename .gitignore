@@ -63,4 +63,4 @@ templates
 /.idea
 /_p__pychache_/
 /__pycache__/
-
+/vcs.xml/

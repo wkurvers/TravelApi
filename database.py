@@ -4,14 +4,17 @@ import sqlalchemy as sqla
 from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from passlib.hash import pbkdf2_sha256
 import time, os
 from hashlib import md5
 
 
-conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=127.0.0.1?port=3306')
 
+conn = sqla.create_engine('mysql+pymysql://root:@127.0.0.1/project?host=127.0.0.1?port=3306')
+
+
+Session = scoped_session(sessionmaker(bind=conn))
 
 Base = declarative_base()
 
@@ -39,7 +42,7 @@ class User(Base,UserMixin):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s=24'.format(digest)
 
-    preference = relationship('Category', secondary="preference_user", backref='preference')
+    preference = relationship('Category', secondary="preference_user", backref='preference', lazy='subquery')
     favorite_place = relationship('Place', secondary="favorite_place")
     favorite_event = relationship('Event', secondary="favorite_event")
     events = relationship('Event')
@@ -86,61 +89,105 @@ class Favorite_Event(Base):
 
 class Persister():
 
+
     def getPassword(self, password):
-        return self.session.query(User).filter(User.password == password).first()
+        db = Session()
+        user = db.query(User).filter(User.password == password).first()
+        db.close()
+        return user
 
     def getEmail(self,email):
-        return self.session.query(User).filter(User.email == email).first()
+        db = Session()
+        user = db.query(User).filter(User.email == email).first()
+        db.close()
+        return user
 
     def persist_object(self, obj):
-        self.session.add(obj)
-        self.session.commit()
+        db = Session()
+        db.add(obj)
+        db.commit()
+        db.close()
 
     def addFriend(self, username, friend):
-        self.session.execute("INSERT INTO friend VALUES ('" + username + "', '" + friend + "'), ('" + friend + "', '" + username + "');")
-        self.session.commit()
+        db = Session()
+        db.execute("INSERT INTO friend VALUES ('" + username + "', '" + friend + "'), ('" + friend + "', '" + username + "');")
+        db.commit()
+        db.close()
 
     def remove_object(self, obj):
-        self.session.delete(obj)
-        self.session.commit()
+        db = Session()
+        db.delete(obj)
+        db.commit()
+        db.close()
 
     def getFriends(self, name):
-        return self.session.query(User, Friend)\
+        db = Session()
+        friends = db.query(User, Friend)\
             .join(Friend, User.username == Friend.username1)\
             .filter(User.username == name) \
             .all()
+        db.close()
+        return friends
 
     def getUser(self, name):
-        return self.session.query(User).filter(User.username == name).first()
+        db = Session()
+        try:
+            user = db.query(User).filter(User.username == name).first()
+            db.close()
+            return user
+        except:
+            db.rollback()
+            db.close()
 
     def getUserByEmail(self, email):
-        return self.session.query(User).filter(User.email == email).first()
+        db = Session()
+        user = db.query(User).filter(User.email == email).first()
+        db.close()
+        return user
 
     def getPassword(self,email):
-        return self.session.query(User.password).filter(User.email == email).first()
+        db = Session()
+        user = db.query(User.password).filter(User.email == email).first()
+        db.close()
+        return user
 
     def getUsername(self,email):
-        return self.session.query(User.username).filter(User.email == email).first()
+        db = Session()
+        user = db.query(User.username).filter(User.email == email).first()
+        db.close()
+        return user
 
     def getEmail(self,email):
-        return self.session.query(User).filter(User.email == email).first()
+        db = Session()
+        user = db.query(User).filter(User.email == email).first()
+        db.close()
+        return user
 
     def getId(self,email):
-        return self.session.query(User.id).filter(User.email == email).first()
+        db = Session()
+        user = db.query(User.id).filter(User.email == email).first()
+        db.close()
+        return user
 
     def getCategories(self):
-        return self.session.query(Category).all()
+        db = Session()
+        categories = db.query(Category).all()
+        db.close()
+        return categories
 
     def removePreference(self, id, name):
-        preference = self.session.query(Preference_User)\
+        db = Session()
+        preference = db.query(Preference_User)\
             .filter(Preference_User.user_username==name)\
             .filter(Preference_User.category_id==int(id))\
             .first()
-        self.session.delete(preference)
-        self.session.commit()
+        db.delete(preference)
+        db.commit()
+        db.close()
 
     def updateUserInfo(self, form):
-        user = self.session.query(User)\
+        db = Session()
+        user = db.query(User)\
             .filter(User.username == form.get('username'))\
             .first()
 
@@ -153,19 +200,22 @@ class Persister():
             user.password = pbkdf2_sha256.hash(password)
         user.country = form.get('country')
 
-        self.session.commit()
+        db.commit()
+        db.close()
 
     def getEvent(self, id):
-        event = self.session.query(Event) \
+        db = Session()
+        event = db.query(Event) \
             .filter(Event.id == id) \
             .first()
-
+        db.close()
         return event
 
     def updateEvent(self, request):
+        db = Session()
         form = request.form
 
-        event = self.session.query(Event)\
+        event = db.query(Event)\
             .filter(Event.id == form.get('eventId'))\
             .first()
 
@@ -195,29 +245,36 @@ class Persister():
             if img != "":
                 event.image = img
 
-        self.session.commit()
+        db.commit()
+        db.close()
 
 
     def removeFavoritePlace(self, id, name):
-        favorite = self.session.query(Preference_User) \
+        db = Session()
+        favorite = db.query(Preference_User) \
         .filter(Favorite_Place.user_username == name) \
         .filter(Favorite_Place.place_id == id) \
         .first()
-        self.session.delete(favorite)
-        self.session.commit()
+        db.delete(favorite)
+        db.commit()
+        db.close()
 
 
     def removeFavoriteEvent(self, id, name):
-        favorite = self.session.query(Preference_User) \
+        db = Session()
+        favorite = db.query(Preference_User) \
             .filter(Favorite_Event.user_username == name) \
             .filter(Favorite_Event.event_id == id) \
             .first()
-        self.session.delete(favorite)
-        self.session.commit()
+        db.delete(favorite)
+        db.commit()
+        db.close()
 
     def __init__(self):
-        Session = sessionmaker(bind=conn)
-        self.session = Session()
+        print("test")
+        #Session = scoped_session(sessionmaker(bind=conn))
+        #Session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=conn))
+        #self.session = Session()
 
 
 Base.metadata.create_all(conn)
