@@ -1,5 +1,5 @@
 import os
-from flask_login import LoginManager, current_user, login_required
+from flask_login import LoginManager, current_user, login_required, logout_user
 from database import User
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 import userApi, eventApi, categoryApi, registerForm, loginForm
@@ -10,13 +10,13 @@ from pymongo import MongoClient
 collection = MongoClient('localhost', 27017).travelbuddy.likes
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-login = LoginManager(app)
-login.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
-@login.user_loader
-def load_user(user_name):
-    return userApi.getUser(user_name)
+@login_manager.user_loader
+def load_user(username):
+    return userApi.getUser(username)
 
 
 @app.route('/editEvent', methods=['GET'])
@@ -83,22 +83,37 @@ def loginCheck():
     else:
         return str(None)
 
+@app.route('/logout')
+def logout():
+    if current_user.is_authenticated:
+        logout_user()
+        return redirect('/')
+    else:
+        return redirect('/login')
+
+@app.route('/api/loginValue', methods=['GET'])
+def loginValue():
+    checking = current_user.is_authenticated
+    if checking:
+        return jsonify({"value": True})
+    else:
+        return jsonify({"value": False})
+
 @app.route('/api/loginName', methods=['GET'])
 def loginName():
     check = current_user.is_authenticated
     if check:
         # print(current_user.username, file=sys.stderr)
-        return jsonify({"yourName": current_user.username})
-    else:
-        return jsonify({"yourName": 'not logged in'})
+        return jsonify({"yourName": current_user.username, "yourEmail": current_user.email})
 
-@app.route('/api/loginEmail', methods=['GET'])
-def loginEmail():
-    check = current_user.is_authenticated
-    if check:
-        return jsonify({"yourEmail": current_user.email})
-    else:
-        return jsonify({"yourEmail": 'blah@blah.com'})
+
+# @app.route('/api/loginEmail', methods=['GET'])
+# def loginEmail():
+#     check = current_user.is_authenticated
+#     if check:
+#         return jsonify({"yourEmail": current_user.email})
+#     else:
+#         return jsonify({"yourEmail": 'blah@blah.com'})
 
 
 @app.route('/api/user/friends', methods=['GET', 'POST'])

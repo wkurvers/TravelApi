@@ -6,6 +6,7 @@ from database import Persister
 persister = Persister()
 
 
+
 def loginCheck(form):
     emailLogin = form.get('email')
     password_candidate = form.get('password')

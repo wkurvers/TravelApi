@@ -9,7 +9,8 @@ from passlib.hash import pbkdf2_sha256
 import time, os
 from hashlib import md5
 
-conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=localhost?port=3306')
+
+conn = sqla.create_engine('mysql+pymysql://root:@localhost/project?host=127.0.0.1?port=3306')
 
 
 Base = declarative_base()
@@ -20,7 +21,7 @@ class Friend(Base):
     username1 = sqla.Column('username1', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
     username2 = sqla.Column('username2', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
 
-class User(Base, UserMixin):
+class User(Base,UserMixin):
     __tablename__ = 'user'
     username = sqla.Column('username', sqla.VARCHAR(64), primary_key=True)
     email = sqla.Column('email', sqla.VARCHAR(64))
@@ -32,6 +33,7 @@ class User(Base, UserMixin):
 
     def get_id(self):
         return self.username
+
 
     def avatar(self):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
