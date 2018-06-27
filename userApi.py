@@ -1,11 +1,12 @@
 from flask import jsonify
-from database import Persister, Preference_User, Favorite_Event, Favorite_Place, Friend
+from database import Persister, Preference_User, Favorite, Friend
 
 persister = Persister()
 
 
 def getUser(user_name):
     return persister.getUser(user_name)
+
 
 def getUserInfo(name):
     data = persister.getUser(name)
@@ -23,7 +24,8 @@ def getFriends(name):
     friends = persister.getFriends(name)
     result = []
     for user in friends:
-        result.append(user.Friend.username2)
+        user = persister.getUser(user.Friend.username2)
+        result.append([user.firstName, user.lastName, user.username])
     return result
 
 
@@ -54,23 +56,71 @@ def addPreference(name, id):
     return "success"
 
 
-def addFavoriteEvent(name, id):
-    favorite = Favorite_Event(user_username=name, event_id=id)
+def addFavorite(name, place_id, event_id, type):
+    if type == "event":
+        favorite = Favorite(user_username=name, event_id=event_id, place_id=None, type="event")
+    elif type == "place":
+        favorite = Favorite(user_username=name, event_id=None, place_id=place_id, type="place")
     persister.persist_object(favorite)
-    return "sucess"
-
-
-def deleteFavoriteEvent(name, id):
-    persister.removeFavoriteEvent(id, name)
     return "success"
 
 
-def addFavoritePlace(name, id):
-    favorite = Favorite_Place(user_username=name, place_id=id)
-    persister.persist_object(favorite)
-    return "sucess"
-
-
-def deleteFavoritePlace(name, id):
-    persister.removeFavoritePlace(id, name)
+def deleteFavorite(id, username):
+    persister.removeFavorite(id, username)
     return "success"
+
+
+def getFavorites(user):
+    favorites = persister.getFavorites(user)
+    result = []
+    for favorite in favorites:
+        location = ""
+        if favorite.address:
+            if favorite.city:
+                location += favorite.address + ", "
+            else:
+                location += favorite.address
+        if favorite.city:
+            if favorite.country:
+                location += favorite.city + ", "
+            else:
+                location += favorite.city
+        if favorite.country:
+            location += favorite.country
+
+        result.append({
+            "id": favorite.id,
+            "type": favorite.type,
+            "placeId": favorite.place_id,
+            "eventId": favorite.event_id,
+            "eventName": favorite.name,
+            "eventDesc": favorite.description,
+            "eventImg": favorite.image,
+            "eventStartDate": favorite.startDate,
+            "eventStartTime": favorite.startTime,
+            "eventEndDate": favorite.endDate,
+            "eventEndTime": favorite.endTime,
+            "image": favorite.image,
+            "address": favorite.address,
+            "city": favorite.city,
+            "location": location,
+            "country": favorite.country,
+            "eventLat": favorite.lat,
+            "eventLng": favorite.lng
+        })
+    return result
+
+
+def checkFavorite(user, id):
+    return persister.checkFavorite(user, id)
+
+
+def getEvents(name):
+    result = []
+    events = persister.getUserEvents(name)
+    for event in events:
+        result.append({
+            "id": event.id,
+            "name": event.name
+        })
+    return jsonify(result)
