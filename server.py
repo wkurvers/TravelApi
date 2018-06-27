@@ -88,22 +88,21 @@ def addEvent():
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
+     if current_user.is_authenticated:
+         return render_template('index.html')
+     if loginForm.loginCheck(request.form):
+        flash("Ingelogd!")
+        return redirect('/profile')
+     else:
+         print('faal', file=sys.stderr)
+         return redirect('/')
 
-    if request.method == 'POST':
-        if request.form['submit'] == 'register':
-            registerForm.registerSubmit(request.form)
-            return render_template('index.html')
-        elif request.form['submit'] == 'login':
-             if current_user.is_authenticated:
-                 return render_template('index.html')
-             if loginForm.loginCheck(request.form):
-                flash("Ingelogd!")
-                return redirect(url_for('profile'))
-             else:
-                 print('faal', file=sys.stderr)
-                 return render_template('index.html')
-    else:
-        return "false request"
+
+
+@app.route('/register', methods=['POST'])
+def registerHandler():
+    registerForm.registerSubmit(request.form)
+    return redirect('/login')
 
 
 @app.route('/api/loginValue', methods=['GET'])
