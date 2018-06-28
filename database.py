@@ -304,6 +304,8 @@ class Persister():
             .delete()
         db.commit()
         db.close()
+    #.filter(Favorite.id == id) \
+
 
     def getFavorites(self, user):
         db = Session()
