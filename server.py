@@ -307,15 +307,19 @@ def favoriteEvent():
 
 
 # Get all user details
-@app.route('/api/user/<name>', methods=['GET', 'POST'])
-def user(name):
-    if request.method == 'GET':
-        user = userApi.getUserInfo(name)
-        return user
+@app.route('/api/user', methods=['GET', 'POST'])
+def user():
+    if current_user.is_authenticated:
+        name = current_user.username
+        if request.method == 'GET':
+            user = userApi.getUserInfo(name)
+            return user
 
-    if request.method == 'POST':
-        userApi.updateUserInfo(request.form)
-        return redirect('/profile')
+        if request.method == 'POST':
+            userApi.updateUserInfo(request.form)
+            return redirect('/profile')
+    else:
+        return jsonify(False)
 
 
 # Get all preferences of user
@@ -329,12 +333,17 @@ def getPreferences():
 
 
 # Submit and remove preference of user
-@app.route('/api/user/preferences/<name>/<id>', methods=['POST', 'DELETE'])
-def preferences(name, id):
-    if request.method == 'POST':
-        return userApi.addPreference(name, id)
-    if request.method == 'DELETE':
-        return userApi.deletePreference(name, id)
+@app.route('/api/user/preferences', methods=['POST', 'DELETE'])
+def preferences():
+    if current_user.is_authenticated:
+        name = current_user.username
+        id = request.args.get('id', None)
+        if request.method == 'POST':
+            return userApi.addPreference(name, id)
+        if request.method == 'DELETE':
+            return userApi.deletePreference(name, id)
+    else:
+        return jsonify(False)
 
 
 # Get all categories available
