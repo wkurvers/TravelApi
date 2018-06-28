@@ -187,96 +187,123 @@ def index():
             return jsonify({'likes': 0})
 
     if request.method == 'POST':
-        userId = request.args.get('userId', None)
-        if doc:
-            if userId in doc['users']:
-                return jsonify({'likes': "Error"})
-            doc['likes'] = doc['likes']+1
-            doc['users'].append(userId)
-            collection.update_one({'place_event_id': placeId}, {'$set': doc})
-            return jsonify({'likes': doc['likes']})
-        else:
-            likes = {
-                'place_event_id': placeId,
-                'likes': 1,
-                'users': [userId]
-            }
-            collection.insert_one(likes)
-            return jsonify({'likes': 1})
-
-    if request.method == 'DELETE':
-        userId = request.args.get('userId', None)
-
-        if doc:
-            if userId in doc['users']:
-                doc['users'].remove(userId)
-                doc['likes'] = doc['likes']-1
+        if current_user.is_authenticated:
+            # userId = request.args.get('userId', None)
+            userId = current_user.username
+            if doc:
+                if userId in doc['users']:
+                    return jsonify({'likes': "Error"})
+                doc['likes'] = doc['likes']+1
+                doc['users'].append(userId)
                 collection.update_one({'place_event_id': placeId}, {'$set': doc})
                 return jsonify({'likes': doc['likes']})
             else:
-                return jsonify({'likes': "Error"})
+                likes = {
+                    'place_event_id': placeId,
+                    'likes': 1,
+                    'users': [userId]
+                }
+                collection.insert_one(likes)
+                return jsonify({'likes': 1})
         else:
-            return "Not found!"
+            return jsonify(False)
+
+    if request.method == 'DELETE':
+        if current_user.is_authenticated:
+            # userId = current_user.username
+            userId = request.args.get('userId', None)
+
+            if doc:
+                if userId in doc['users']:
+                    doc['users'].remove(userId)
+                    doc['likes'] = doc['likes']-1
+                    collection.update_one({'place_event_id': placeId}, {'$set': doc})
+                    return jsonify({'likes': doc['likes']})
+                else:
+                    return jsonify({'likes': "Error"})
+            else:
+                return "Not found!"
+        else:
+            return jsonify(False)
 
 
 @app.route('/api/user/checkLiked')
 def check():
-    placeId = request.args.get('placeId', None)
-    userId = request.args.get('userId', None)
+    if current_user.is_authenticated:
+        userId = current_user.username
+        placeId = request.args.get('placeId', None)
+        # userId = request.args.get('userId', None)
 
-    if placeId and userId:
-        doc = collection.find_one(
-            {'place_event_id': placeId}
-        )
-        if not doc:
-            doc = {
-                'place_event_id': placeId,
-                'likes': 0,
-                'users': []
-            }
-            collection.insert_one(doc)
+        if placeId and userId:
+            doc = collection.find_one(
+                {'place_event_id': placeId}
+            )
+            if not doc:
+                doc = {
+                    'place_event_id': placeId,
+                    'likes': 0,
+                    'users': []
+                }
+                collection.insert_one(doc)
+                return jsonify({"check": False})
+            if userId in doc['users']:
+                return jsonify({"check": True})
             return jsonify({"check": False})
-        if userId in doc['users']:
-            return jsonify({"check": True})
-        return jsonify({"check": False})
+        else:
+            return "Error"
     else:
-        return "Error"
+        return jsonify(False)
 
 
 @app.route('/api/user/checkFavorite', methods=['GET'])
 def checkFavorite():
-    user = request.args.get('username', None)
-    id = request.args.get('id', None)
-    result = userApi.checkFavorite(user, id)
-    if result:
-        return str(result), 409
-    return str(result), 200
+    if current_user.is_authenticated:
+        user = current_user.username
+        # user = request.args.get('username', None)
+        id = request.args.get('id', None)
+        result = userApi.checkFavorite(user, id)
+        if result:
+            return str(result), 409
+        return str(result), 200
+    else:
+        return jsonify(False)
 
 
 @app.route('/api/user/favorite', methods=['POST', 'DELETE', 'GET'])
 def favoriteEvent():
     if request.method == 'POST':
-        user = request.args.get('username', None)
-        type = request.args.get('type', None)
-        if type == "event":
-            place_id = None
-            event_id = request.args.get('eventId', None)
-        elif type == "place":
-            place_id = request.args.get('placeId', None)
-            event_id = None
+        if current_user.is_authenticated:
+            user = current_user.username
+            #user = request.args.get('username', None)
+            type = request.args.get('type', None)
+            if type == "event":
+                place_id = None
+                event_id = request.args.get('eventId', None)
+            elif type == "place":
+                place_id = request.args.get('placeId', None)
+                event_id = None
+            else:
+                place_id = None
+                event_id = None
+            return userApi.addFavorite(user, place_id, event_id, type)
         else:
-            place_id = None
-            event_id = None
-        return userApi.addFavorite(user, place_id, event_id, type)
+            return jsonify(False)
 
     if request.method == 'DELETE':
-        username = request.args.get('username', None)
-        id = request.args.get('id', None)
-        return userApi.deleteFavorite(id, username)
+        if current_user.is_authenticated:
+            username = current_user.username
+            id = request.args.get('id', None)
+            return userApi.deleteFavorite(id, username)
+        else:
+            return jsonify(False)
 
     if request.method == 'GET':
-        user = request.args.get('username', None)
-        return json.dumps(userApi.getFavorites(user), indent=4, default=str)
+        # user = request.args.get('username', None)
+        if current_user.is_authenticated:
+            user = current_user.username
+            return json.dumps(userApi.getFavorites(user), indent=4, default=str)
+        else:
+            return jsonify(False)
 
 
 # Get all user details
@@ -292,9 +319,13 @@ def user(name):
 
 
 # Get all preferences of user
-@app.route('/api/user/preferences/<name>', methods=['GET'])
-def getPreferences(name):
-    return userApi.getUserPreferences(name)
+@app.route('/api/user/preferences', methods=['GET'])
+def getPreferences():
+    if current_user.is_authenticated:
+        name = current_user.username
+        return userApi.getUserPreferences(name)
+    else:
+        return jsonify(False)
 
 
 # Submit and remove preference of user
