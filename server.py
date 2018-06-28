@@ -1,9 +1,9 @@
 import os
 from flask_login import LoginManager, current_user, login_required, logout_user
 from database import User
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, send_file
 import userApi, eventApi, categoryApi, registerForm, loginForm
-import sys
+import sys, json
 from pymongo import MongoClient
 
 
@@ -19,12 +19,44 @@ def load_user(user_name):
     return userApi.getUser(user_name)
 
 
+@app.route('/api/user/getEvents', methods=['GET'])
+def getUserEvents():
+    if current_user.is_authenticated:
+        return userApi.getEvents(current_user.username)
+    else:
+        return jsonify([])
+
+
+@app.route('/api/getEvents', methods=['GET'])
+def getEvents():
+    country = request.args.get('country', None)
+    city = request.args.get('city', None)
+    return eventApi.getEvents(city, country)
+
+
 @app.route('/editEvent', methods=['GET'])
 def editEvent():
     if current_user.is_authenticated:
         return render_template('index.html')
     else:
         return redirect('/')
+
+
+@app.route('/eventImage', methods=['GET'])
+def getImage():
+    img = request.args.get('img', None)
+    return send_file('images/events/'+img, mimetype='image/gif')
+
+
+@app.route('/api/countryName', methods=['GET'])
+def getCountry():
+    code = request.args.get('code', None)
+    return categoryApi.getCountry(code)
+
+
+@app.route('/api/countries', methods=['GET'])
+def countries():
+    return categoryApi.getCountries()
 
 
 @app.route('/api/user/editEvent', methods=['POST', 'GET'])
@@ -56,22 +88,21 @@ def addEvent():
 
 @app.route('/login', methods=['POST'])
 def loginPageHandler():
+     if current_user.is_authenticated:
+         return render_template('index.html')
+     if loginForm.loginCheck(request.form):
+        flash("Ingelogd!")
+        return redirect('/profile')
+     else:
+         print('faal', file=sys.stderr)
+         return redirect('/')
 
-    if request.method == 'POST':
-        if request.form['submit'] == 'register':
-            registerForm.registerSubmit(request.form)
-            return render_template('index.html')
-        elif request.form['submit'] == 'login':
-             if current_user.is_authenticated:
-                 return render_template('index.html')
-             if loginForm.loginCheck(request.form):
-                flash("Ingelogd!")
-                return redirect(url_for('profile'))
-             else:
-                 print('faal', file=sys.stderr)
-                 return render_template('index.html')
-    else:
-        return "false request"
+
+
+@app.route('/register', methods=['POST'])
+def registerHandler():
+    registerForm.registerSubmit(request.form)
+    return redirect('/login')
 
 
 @app.route('/api/loginValue', methods=['GET'])
@@ -108,12 +139,14 @@ def loginName():
         # print(current_user.username, file=sys.stderr)
         return jsonify({
                 "yourName": current_user.username,
-                "yourEmail": current_user.email
+                "yourEmail": current_user.email,
+                "yourCountry": current_user.country
         })
     else:
         return jsonify({
             "yourName": 'not logged in',
-            "yourEmail": 'blah@blah.com'
+            "yourEmail": 'blah@blah.com',
+            "yourCountry": None
         })
 
 
@@ -210,20 +243,40 @@ def check():
         return "Error"
 
 
-@app.route('/api/user/favoriteEvent', methods=['POST', 'DELETE'])
-def favoriteEvent(name, id):
-    if request.method == 'POST':
-        return userApi.addFavoriteEvent(name, id)
-    if request.method == 'DELETE':
-        return userApi.deleteFavoriteEvent(name, id)
+@app.route('/api/user/checkFavorite', methods=['GET'])
+def checkFavorite():
+    user = request.args.get('username', None)
+    id = request.args.get('id', None)
+    result = userApi.checkFavorite(user, id)
+    if result:
+        return str(result), 409
+    return str(result), 200
 
 
-@app.route('/api/user/favoritePlace', methods=['POST', 'DELETE'])
-def favoritePlace(name, id):
+@app.route('/api/user/favorite', methods=['POST', 'DELETE', 'GET'])
+def favoriteEvent():
     if request.method == 'POST':
-        return userApi.addFavoritePlace(name, id)
+        user = request.args.get('username', None)
+        type = request.args.get('type', None)
+        if type == "event":
+            place_id = None
+            event_id = request.args.get('eventId', None)
+        elif type == "place":
+            place_id = request.args.get('placeId', None)
+            event_id = None
+        else:
+            place_id = None
+            event_id = None
+        return userApi.addFavorite(user, place_id, event_id, type)
+
     if request.method == 'DELETE':
-        return userApi.deleteFavoritePlace(name, id)
+        username = request.args.get('username', None)
+        id = request.args.get('id', None)
+        return userApi.deleteFavorite(id, username)
+
+    if request.method == 'GET':
+        user = request.args.get('username', None)
+        return json.dumps(userApi.getFavorites(user), indent=4, default=str)
 
 
 # Get all user details
