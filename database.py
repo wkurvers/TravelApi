@@ -68,8 +68,8 @@ class Favorite(Base):
 class Event(Base):
     __tablename__ = 'event'
     id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
-    name = sqla.Column('name', sqla.VARCHAR(64))
-    description = sqla.Column('description', sqla.VARCHAR(64))
+    name = sqla.Column('name', sqla.VARCHAR(128))
+    description = sqla.Column('description', sqla.TEXT)
     address = sqla.Column('address', sqla.VARCHAR(64))
     city = sqla.Column('city', sqla.VARCHAR(64))
     country = sqla.Column('country', sqla.VARCHAR(64))
