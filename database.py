@@ -139,6 +139,12 @@ class Persister():
             db.rollback()
             db.close()
 
+    def getAllUsers(self):
+        db = Session()
+        users = db.query(User.username).all()
+        db.close()
+        return users
+
     def getUserByEmail(self, email):
         db = Session()
         user = db.query(User).filter(User.email == email).first()
@@ -183,6 +189,26 @@ class Persister():
             .first()
         db.delete(preference)
         db.commit()
+        db.close()
+
+    def removeFriend(self,username,friend):
+        db = Session()
+        try:
+            myFriend = db.query(Friend) \
+                .filter(Friend.username1==username) \
+                .filter(Friend.username2==friend) \
+                .first()
+            db.delete(myFriend)
+
+            hisFriend = db.query(Friend) \
+                .filter(Friend.username1==friend) \
+                .filter(Friend.username2==username) \
+                .first()
+            db.delete(hisFriend)
+            db.commit()
+            return True
+        except:
+            return False
         db.close()
 
     def updateUserInfo(self, form):

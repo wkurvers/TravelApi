@@ -1,3 +1,5 @@
+import sys
+
 from flask import jsonify
 from database import Persister, Preference_User, Favorite_Event, Favorite_Place, Friend
 
@@ -23,7 +25,8 @@ def getFriends(name):
     friends = persister.getFriends(name)
     result = []
     for user in friends:
-        result.append(user.Friend.username2)
+        user = persister.getUser(user.Friend.username2)
+        result.append([user.firstName, user.lastName, user.country])
     return result
 
 
@@ -42,6 +45,9 @@ def getUserPreferences(name):
         res.update({preference.name: preference.id})
     return jsonify(res)
 
+def getAllUsers():
+    users = persister.getAllUsers()
+    return jsonify({"users": users})
 
 def deletePreference(name, id):
     persister.removePreference(id, name)
@@ -74,3 +80,7 @@ def addFavoritePlace(name, id):
 def deleteFavoritePlace(name, id):
     persister.removeFavoritePlace(id, name)
     return "success"
+
+def deleteFriend(username, friend):
+    status = persister.removeFriend(username,friend)
+    return status

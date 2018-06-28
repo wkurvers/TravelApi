@@ -115,27 +115,31 @@ def loginName():
         })
 
 
-
-
-# @app.route('/api/loginEmail', methods=['GET'])
-# def loginEmail():
-#     check = current_user.is_authenticated
-#     if check:
-#         return jsonify({"yourEmail": current_user.email})
-#     else:
-#         return jsonify({"yourEmail": 'blah@blah.com'})
-
-
-@app.route('/api/user/friends', methods=['GET', 'POST'])
+@app.route('/friends')
 def friends():
-    username = request.args.get('name')
+    return render_template('index.html')
+
+
+@app.route('/api/user/friends',methods=['GET','POST'])
+def friendsMethods():
+    username = current_user.firstName
     if request.method == 'GET':
         friendList = userApi.getFriends(username)
         return jsonify({"friends": friendList})
     if request.method == 'POST':
-        friend = request.args.get('friend')
+        friend = request.form.get('friend')
         userApi.addFriend(username, friend)
         return redirect('/profile')
+
+@app.route('/api/user/friends/<name>',methods=['DELETE'])
+def deleteFriend(name):
+    username = current_user.firstName
+    if request.method == 'DELETE':
+        print('jij wilt deleten', file=sys.stderr)
+        status = userApi.deleteFriend(username, name)
+        return jsonify({"deleteStatus": status})
+        # return redirect('/')
+
 
 
 @app.route('/api/likes', methods=['GET', 'DELETE', 'POST'])
@@ -243,6 +247,10 @@ def user(name):
 def getPreferences(name):
     return userApi.getUserPreferences(name)
 
+# Get all users
+@app.route('/api/userList/', methods=['GET'])
+def getAllUsers():
+    return userApi.getAllUsers()
 
 # Submit and remove preference of user
 @app.route('/api/user/preferences/<name>/<id>', methods=['POST', 'DELETE'])
