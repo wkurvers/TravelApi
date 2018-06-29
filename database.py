@@ -1,6 +1,7 @@
 
 import sys
 import sqlalchemy as sqla
+from flask import jsonify
 from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -212,23 +213,25 @@ class Persister():
         db.commit()
         db.close()
 
-    def updateUserInfo(self, form):
+    def updateUserInfo(self, firstName, lastName, country, email, username, password):
         db = Session()
         user = db.query(User)\
-            .filter(User.username == form.get('username'))\
+            .filter(User.username == username)\
             .first()
 
-        user.firstName = form.get('firstName')
-        user.lastName = form.get('lastName')
-        user.country = form.get('country')
-        user.email = form.get('email')
-        password = form.get('password')
-        if len(password) > 3:
+        user.firstName = firstName
+        user.lastName = lastName
+        user.country = country
+        user.email = email
+
+        if password:
             user.password = pbkdf2_sha256.hash(password)
-        user.country = form.get('country')
 
         db.commit()
         db.close()
+        return jsonify({
+            "message": "Updated!"
+        }), 200, {'ContentType': 'application/json'}
 
     def getEvent(self, id):
         db = Session()

@@ -120,7 +120,7 @@ def loginCheck():
         print(current_user.username, file=sys.stderr)
         return jsonify({"username": current_user.username})
     else:
-        return str(None)
+        return jsonify(False)
 
 
 @app.route('/logout')
@@ -307,19 +307,16 @@ def favoriteEvent():
 
 
 # Get all user details
-@app.route('/api/user', methods=['GET', 'POST'])
+@app.route('/api/user', methods=['GET', 'PUT'])
+@login_required
 def user():
-    if current_user.is_authenticated:
-        name = current_user.username
-        if request.method == 'GET':
-            user = userApi.getUserInfo(name)
-            return user
+    name = current_user.username
+    if request.method == 'GET':
+        user = userApi.getUserInfo(name)
+        return user
 
-        if request.method == 'POST':
-            userApi.updateUserInfo(request.form)
-            return redirect('/profile')
-    else:
-        return jsonify(False)
+    if request.method == 'PUT':
+        return userApi.updateUserInfo(request.args)
 
 
 # Get all preferences of user
