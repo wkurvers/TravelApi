@@ -91,7 +91,7 @@ def loginPageHandler():
      if current_user.is_authenticated:
          return render_template('index.html')
      else:
-        return jsonify({'check': loginForm.loginCheck(request.args)})
+        return jsonify({'value': True}),loginForm.loginUser(request.args)
 
 
 
