@@ -5,6 +5,7 @@ from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy import exists, or_
 from passlib.hash import pbkdf2_sha256
 import time, os
 from hashlib import md5
@@ -43,8 +44,7 @@ class User(Base,UserMixin):
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s=24'.format(digest)
 
     preference = relationship('Category', secondary="preference_user", backref='preference', lazy='subquery')
-    favorite_place = relationship('Place', secondary="favorite_place")
-    favorite_event = relationship('Event', secondary="favorite_event")
+    favorite = relationship('Favorite')
     events = relationship('Event')
 
 class Category(Base):
@@ -58,37 +58,65 @@ class Preference_User(Base):
     category_id = sqla.Column('category.id', sqla.Integer, sqla.ForeignKey("category.id"), primary_key=True)
     user_username = sqla.Column('user.username', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
 
-class Place(Base):
-    __tablename__ = 'place'
+class Favorite(Base):
+    __tablename__ = 'favorite'
     id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
-    place_id = sqla.Column('place.id', sqla.VARCHAR(64))
-
-class Favorite_Place(Base):
-    __tablename__ = 'favorite_place'
-    user_username = sqla.Column('user.username', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
-    place_id = sqla.Column('place.id', sqla.Integer, sqla.ForeignKey("place.id"), primary_key=True)
+    user_username = sqla.Column('user_username', sqla.VARCHAR(64), sqla.ForeignKey("user.username"))
+    place_id = sqla.Column('place_id', sqla.VARCHAR(64))
+    event_id = sqla.Column('event_id', sqla.Integer, sqla.ForeignKey('event.id'), sqla.ForeignKey("event.id"))
+    type = sqla.Column('type', sqla.VARCHAR(10))
 
 class Event(Base):
     __tablename__ = 'event'
     id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
     name = sqla.Column('name', sqla.VARCHAR(64))
     description = sqla.Column('description', sqla.VARCHAR(64))
-    location = sqla.Column('location', sqla.VARCHAR(64))
+    address = sqla.Column('address', sqla.VARCHAR(64))
+    city = sqla.Column('city', sqla.VARCHAR(64))
+    country = sqla.Column('country', sqla.VARCHAR(64))
     startDate = sqla.Column('start_date', sqla.DATE)
     startTime = sqla.Column('start_time', sqla.TIME)
     endDate = sqla.Column('end_date', sqla.DATE)
     endTime = sqla.Column('end_time', sqla.TIME)
     image = sqla.Column('image', sqla.VARCHAR(64))
+    lat = sqla.Column('lat', sqla.DECIMAL(10, 8))
+    lng = sqla.Column('lng', sqla.DECIMAL(10, 8))
     category = sqla.Column('category', sqla.Integer, sqla.ForeignKey('category.id'))
     owner = sqla.Column('owner', sqla.VARCHAR(64), sqla.ForeignKey('user.username'))
 
-class Favorite_Event(Base):
-    __tablename__ = 'favorite_event'
-    user_username = sqla.Column('user_username', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
-    event_id = sqla.Column('event_id', sqla.Integer, sqla.ForeignKey("event.id"), primary_key=True)
+class Country(Base):
+    __tablename__ = 'country'
+    id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
+    code = sqla.Column('code', sqla.VARCHAR(4), unique=True)
+    name = sqla.Column('name', sqla.VARCHAR(64), unique=True)
 
 class Persister():
 
+    def getCityEvents(self, city, country):
+        db = Session()
+        events = db.query(Event).filter(Event.city == city).limit(10).all()
+        if len(events) < 2:
+            events = db.query(Event).filter(Event.country == country).limit(10).all()
+            if len(events) < 2:
+                db.close()
+                return None
+            db.close()
+            return [country, events]
+        else:
+            db.close()
+            return [city, events]
+
+    def getCountries(self):
+        db = Session()
+        countries = db.query(Country).all()
+        db.close()
+        return countries
+
+    def getCountry(self, code):
+        db = Session()
+        country = db.query(Country.name).filter(Country.code == code).first()
+        db.close()
+        return country
 
     def getPassword(self, password):
         db = Session()
@@ -246,6 +274,18 @@ class Persister():
             .first()
 
         if event.owner == form.get('owner'):
+            location = form.get('location')
+            temp = location.split(', ')
+            country = None
+            city = None
+            address = None
+            if len(temp) > 0:
+                country = temp.pop()
+            if len(temp) > 0:
+                city = temp.pop()
+            if len(temp) > 0:
+                address = temp.pop()
+
             img = ""
             if request.files.get('image', None):
                 file = request.files.get('image', None)
@@ -258,8 +298,12 @@ class Persister():
                 event.category = form.get('category')
             if form.get('description'):
                 event.description = form.get('description')
-            if form.get('location'):
-                event.location = form.get('location')
+            if event.address:
+                event.address = address
+            if event.city:
+                event.city = city
+            if event.country:
+                event.country = country
             if form.get('start_date'):
                 event.startDate = form.get('start_date')
             if form.get('start_time'):
@@ -268,40 +312,66 @@ class Persister():
                 event.endDate = form.get('end_date')
             if form.get('end_time'):
                 event.endTime = form.get('end_time')
+            if form.get('lat'):
+                event.lat = form.get('lat')
+            if form.get('lng'):
+                event.lng = form.get('lng')
             if img != "":
                 event.image = img
 
         db.commit()
         db.close()
 
-
-    def removeFavoritePlace(self, id, name):
+    def removeFavorite(self, id, username):
         db = Session()
-        favorite = db.query(Preference_User) \
-        .filter(Favorite_Place.user_username == name) \
-        .filter(Favorite_Place.place_id == id) \
-        .first()
-        db.delete(favorite)
+
+        db.query(Favorite) \
+            .filter(Favorite.user_username == username) \
+            .filter(or_(Favorite.event_id == id, Favorite.place_id == id)) \
+            .delete()
         db.commit()
         db.close()
 
-
-    def removeFavoriteEvent(self, id, name):
+    def getFavorites(self, user):
         db = Session()
-        favorite = db.query(Preference_User) \
-            .filter(Favorite_Event.user_username == name) \
-            .filter(Favorite_Event.event_id == id) \
+        favorites = db\
+            .query(
+                Favorite.id, Favorite.type, Favorite.event_id, Favorite.place_id,
+                Event.name, Event.image, Event.description, Event.startDate,
+                Event.startTime, Event.endDate, Event.endTime, Event.address,
+                Event.city, Event.country, Event.lat, Event.lng
+            )\
+            .outerjoin(Event, Event.id == Favorite.event_id) \
+            .filter(Favorite.user_username == user) \
+            .all()
+        db.close()
+        return favorites
+
+    def checkFavorite(self, username, id):
+        db = Session()
+        favorite = db.query(Favorite)\
+            .filter(Favorite.user_username == username)\
+            .filter(or_(Favorite.place_id == id, Favorite.event_id == id))\
             .first()
-        db.delete(favorite)
-        db.commit()
         db.close()
+        if favorite:
+            return True
+        return False
 
-    def __init__(self):
-        print("test")
+    def getUserEvents(self, username):
+        db = Session()
+        events = db.query(Event)\
+            .filter(Event.owner == username)\
+            .all()
+        db.close()
+        return events
+
+
+    # def __init__(self):
+    #     print("test")
         #Session = scoped_session(sessionmaker(bind=conn))
         #Session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=conn))
         #self.session = Session()
-
 
 Base.metadata.create_all(conn)
 
