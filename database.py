@@ -10,6 +10,7 @@ from sqlalchemy import exists, or_
 from passlib.hash import pbkdf2_sha256
 import time, os
 from hashlib import md5
+import checks
 
 
 conn = sqla.create_engine('mysql+pymysql://root:@127.0.0.1/project?host=127.0.0.1?port=3306')
@@ -82,7 +83,6 @@ class Event(Base):
     image = sqla.Column('image', sqla.VARCHAR(64))
     lat = sqla.Column('lat', sqla.DECIMAL(10, 8))
     lng = sqla.Column('lng', sqla.DECIMAL(10, 8))
-    category = sqla.Column('category', sqla.Integer, sqla.ForeignKey('category.id'))
     owner = sqla.Column('owner', sqla.VARCHAR(64), sqla.ForeignKey('user.username'))
 
 class Country(Base):
@@ -244,7 +244,7 @@ class Persister():
             db.close()
             return False
 
-    def updateUserInfo(self, firstName, lastName, country, email, username, password):
+    def updateUserInfo(self, firstName, lastName, country, username, password):
         db = Session()
         user = db.query(User)\
             .filter(User.username == username)\
@@ -253,7 +253,6 @@ class Persister():
         user.firstName = firstName
         user.lastName = lastName
         user.country = country
-        user.email = email
 
         if password:
             user.password = pbkdf2_sha256.hash(password)
@@ -274,14 +273,58 @@ class Persister():
 
     def updateEvent(self, request):
         db = Session()
-        form = request.form
+        form = request.args
 
         event = db.query(Event)\
             .filter(Event.id == form.get('eventId'))\
             .first()
 
         if event.owner == form.get('owner'):
-            location = form.get('location')
+
+            location = form.get('location').strip()
+            name = form.get('name').strip()
+            description = form.get('description').strip()
+            startDate = form.get('startDate')
+            startTime = form.get('startTime')
+            endDate = form.get('endDate')
+            endTime = form.get('endTime')
+            owner = form.get('owner')
+            lng = form.get('lng')
+            lat = form.get('lat')
+
+            if checks.emptyCheck([location, name, description, startDate, startTime, endDate, endTime, owner, lng, lat]):
+                return jsonify({
+                    "message": "Please, fill in all fields."
+                }), 400, {'ContentType': 'application/json'}
+
+            if checks.lengthSixtyFourCheck([name]):
+                return jsonify({
+                    "message": "Please don't fill in more than 64 characters."
+                }), 400, {'ContentType': 'application/json'}
+
+            if checks.dateTimeCheck(startDate, startTime, endDate, endTime):
+                return jsonify({
+                    "message": "A problem occurred with regards to the dates and times of this event.<br>"
+                               "Rules:<br>"
+                               "- Events that start later than 1 year from now are not allowed.<br>"
+                               "- The event's start date/time can't be later than the end date/time.<br>"
+                               "- You can't enter dates earlier than today.<br>"
+                               "- An event's length can't be longer than a year."
+                }), 400, {'ContentType': 'application/json'}
+
+            if request.files.get('image'):
+                file = request.files.get('image', None)
+                img = str(time.time()).replace(".", "")
+                ext = file.filename.partition(".")[-1]
+                if not checks.imgExtensionCheck(ext):
+                    return jsonify({
+                        "message": "Only .png, .jpg or .jpeg  images are valid!"
+                    }), 400, {'ContentType': 'application/json'}
+                img = img + "." + ext
+                file.save(os.path.join('images\events', img))
+            else:
+                img = None
+
             temp = location.split(', ')
             country = None
             city = None
@@ -291,43 +334,47 @@ class Persister():
             if len(temp) > 0:
                 city = temp.pop()
             if len(temp) > 0:
-                address = temp.pop()
+                address = ', '.join(temp)
 
-            img = ""
-            if request.files.get('image', None):
-                file = request.files.get('image', None)
-                img = str(time.time()).replace(".", "")
-                img = img + "." + file.filename.partition(".")[-1]
-                file.save(os.path.join('images\events', img))
-            if form.get('name'):
-                event.name = form.get('name')
-            if form.get('category'):
-                event.category = form.get('category')
-            if form.get('description'):
-                event.description = form.get('description')
-            if event.address:
-                event.address = address
-            if event.city:
-                event.city = city
-            if event.country:
-                event.country = country
-            if form.get('start_date'):
-                event.startDate = form.get('start_date')
-            if form.get('start_time'):
-                event.startTime = form.get('start_time')
-            if form.get('end_date'):
-                event.endDate = form.get('end_date')
-            if form.get('end_time'):
-                event.endTime = form.get('end_time')
-            if form.get('lat'):
-                event.lat = form.get('lat')
-            if form.get('lng'):
-                event.lng = form.get('lng')
-            if img != "":
+            event.name = name
+            event.description = description
+            event.address = address
+            event.city = city
+            event.country = country
+            event.startDate = form.get('startDate')
+            event.startTime = form.get('startTime')
+            event.endDate = form.get('endDate')
+            event.endTime = form.get('endTime')
+            event.lat = form.get('lat')
+            event.lng = form.get('lng')
+            if img:
                 event.image = img
 
         db.commit()
         db.close()
+
+        return jsonify({
+            "message": "Event updated!"
+        }), 200, {'ContentType': 'application/json'}
+
+    def deleteEvent(self, eventId, username):
+        db = Session()
+
+        event = db.query(Event).filter(Event.id == eventId)\
+            .filter(Event.owner == username)
+
+        if not event:
+            return jsonify({
+                "message": "Either the event does not exist, or you are not the owner!"
+            }), 400, {'ContentType': 'application/json'}
+
+        event.delete()
+        db.commit()
+        db.close()
+
+        return jsonify({
+            "message": "Successfully deleted!"
+        }), 200, {'ContentType': 'application/json'}
 
     def removeFavorite(self, id, username):
         db = Session()
@@ -372,6 +419,17 @@ class Persister():
             .all()
         db.close()
         return events
+
+    def checkUserExistance(self, username, email):
+        db = Session()
+        if db.query(User).filter(User.email == email).count():
+            db.close()
+            return True
+        if db.query(User).filter(User.username == username).count():
+            db.close()
+            return True
+        db.close()
+        return False
 
 
     # def __init__(self):
