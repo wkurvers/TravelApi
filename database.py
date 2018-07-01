@@ -1,6 +1,7 @@
 
 import sys
 import sqlalchemy as sqla
+from flask import jsonify
 from flask_login import UserMixin
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -11,9 +12,9 @@ import time, os
 from hashlib import md5
 
 
-
 conn = sqla.create_engine('mysql+pymysql://root:@127.0.0.1/project?host=127.0.0.1?port=3306')
-
+#conn = sqla.create_engine('mysql+mysqlconnector://root:mysqlSet33@127.0.0.1/project?host=127.0.0.1?port=3306', pool_recycle=3600)
+#conn = sqla.create_engine('mysql+mysqlconnector://root:mysqlSet33@127.0.0.1/project?host=127.0.0.1?port=3306')
 
 Session = scoped_session(sessionmaker(bind=conn))
 
@@ -69,8 +70,8 @@ class Favorite(Base):
 class Event(Base):
     __tablename__ = 'event'
     id = sqla.Column('id', sqla.Integer, primary_key=True, autoincrement=True)
-    name = sqla.Column('name', sqla.VARCHAR(64))
-    description = sqla.Column('description', sqla.VARCHAR(64))
+    name = sqla.Column('name', sqla.VARCHAR(128))
+    description = sqla.Column('description', sqla.TEXT)
     address = sqla.Column('address', sqla.VARCHAR(64))
     city = sqla.Column('city', sqla.VARCHAR(64))
     country = sqla.Column('country', sqla.VARCHAR(64))
@@ -243,23 +244,25 @@ class Persister():
             db.close()
             return False
 
-    def updateUserInfo(self, form):
+    def updateUserInfo(self, firstName, lastName, country, email, username, password):
         db = Session()
         user = db.query(User)\
-            .filter(User.username == form.get('username'))\
+            .filter(User.username == username)\
             .first()
 
-        user.firstName = form.get('firstName')
-        user.lastName = form.get('lastName')
-        user.country = form.get('country')
-        user.email = form.get('email')
-        password = form.get('password')
-        if len(password) > 3:
+        user.firstName = firstName
+        user.lastName = lastName
+        user.country = country
+        user.email = email
+
+        if password:
             user.password = pbkdf2_sha256.hash(password)
-        user.country = form.get('country')
 
         db.commit()
         db.close()
+        return jsonify({
+            "message": "Updated!"
+        }), 200, {'ContentType': 'application/json'}
 
     def getEvent(self, id):
         db = Session()
