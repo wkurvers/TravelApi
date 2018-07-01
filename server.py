@@ -59,11 +59,10 @@ def countries():
     return categoryApi.getCountries()
 
 
-@app.route('/api/user/editEvent', methods=['POST', 'GET'])
+@app.route('/api/user/editEvent', methods=['PUT', 'GET'])
 def updateEvent():
-    if request.method == 'POST':
-        eventApi.updateEvent(request)
-        return redirect('/profile')
+    if request.method == 'PUT':
+        return eventApi.updateEvent(request)
     if request.method == 'GET':
         if request.args.get('id'):
             event = eventApi.getEvent(request.args.get('id'))
@@ -71,11 +70,15 @@ def updateEvent():
         else:
             return redirect('/profile')
 
+
 # Submit event
-@app.route('/api/event', methods=['POST'])
+@app.route('/api/event', methods=['POST', 'DELETE'])
+@login_required
 def postEvent():
-    eventApi.postEvent(request)
-    return redirect('/addEvent')
+    if request.method == 'POST':
+        return eventApi.postEvent(request)
+    if request.method == 'DELETE':
+        return eventApi.deleteEvent(request, current_user.username)
 
 
 @app.route('/addEvent', methods=['GET'])
@@ -98,11 +101,9 @@ def loginPageHandler():
          return redirect('/')
 
 
-
 @app.route('/register', methods=['POST'])
 def registerHandler():
-    registerForm.registerSubmit(request.form)
-    return redirect('/login')
+    return registerForm.registerSubmit(request.args)
 
 
 @app.route('/api/loginValue', methods=['GET'])

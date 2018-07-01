@@ -1,5 +1,6 @@
 from flask import jsonify
 from database import Persister, Preference_User, Favorite, Friend
+import checks
 
 persister = Persister()
 
@@ -37,32 +38,31 @@ def updateUserInfo(form):
     firstName = form.get('firstName', None)
     lastName = form.get('lastName', None)
     country = form.get('country', None)
-    email = form.get('email', None)
     username = form.get('username', None)
 
-    if not firstName and lastName and country and email:
+    if checks.emptyCheck([firstName, lastName, country]):
         return jsonify({
             "message": "Please fill in all fields."
         }), 400, {'ContentType': 'application/json'}
 
-    if (len(firstName) > 64 or len(lastName) > 64 or len(country) > 64
-            or len(email) > 64):
+    if checks.lengthSixtyFourCheck([firstName, lastName, country]):
         return jsonify({
             "message": "Please don't fill in more than 64 characters."
         }), 400, {'ContentType': 'application/json'}
 
     password = form.get('password', None)
     if password:
-        if not len(password) > 4:
+        check = checks.passwordLengthCheck(password)
+        if check == [False, "short"]:
             return jsonify({
                 "message": "Please make your password 5 characters or longer."
             }), 400, {'ContentType': 'application/json'}
-        if len(password) > 64:
+        if check == [False, "long"]:
             return jsonify({
                 "message": "Please keep your password shorter than 64 characters."
             }), 400, {'ContentType': 'application/json'}
 
-    return persister.updateUserInfo(firstName, lastName, country, email, username, password)
+    return persister.updateUserInfo(firstName, lastName, country, username, password)
 
 
 def getUserPreferences(name):
