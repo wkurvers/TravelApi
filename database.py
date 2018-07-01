@@ -26,7 +26,7 @@ class Friend(Base):
     username1 = sqla.Column('username1', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
     username2 = sqla.Column('username2', sqla.VARCHAR(64), sqla.ForeignKey("user.username"), primary_key=True)
 
-class User(Base, UserMixin):
+class User(Base,UserMixin):
     __tablename__ = 'user'
     username = sqla.Column('username', sqla.VARCHAR(64), primary_key=True)
     email = sqla.Column('email', sqla.VARCHAR(64))
@@ -38,6 +38,7 @@ class User(Base, UserMixin):
 
     def get_id(self):
         return self.username
+
 
     def avatar(self):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
@@ -138,9 +139,13 @@ class Persister():
 
     def addFriend(self, username, friend):
         db = Session()
-        db.execute("INSERT INTO friend VALUES ('" + username + "', '" + friend + "'), ('" + friend + "', '" + username + "');")
-        db.commit()
-        db.close()
+        try:
+         db.execute("INSERT INTO friend VALUES ('" + username + "', '" + friend + "'), ('" + friend + "', '" + username + "');")
+         db.commit()
+         return True
+        except:
+         db.close()
+         return False
 
     def remove_object(self, obj):
         db = Session()
@@ -166,6 +171,12 @@ class Persister():
         except:
             db.rollback()
             db.close()
+
+    def getAllUsers(self):
+        db = Session()
+        users = db.query(User.username).all()
+        db.close()
+        return users
 
     def getUserByEmail(self, email):
         db = Session()
@@ -212,6 +223,26 @@ class Persister():
         db.delete(preference)
         db.commit()
         db.close()
+
+    def removeFriend(self,username,friend):
+        db = Session()
+        try:
+            myFriend = db.query(Friend) \
+                .filter(Friend.username1==username) \
+                .filter(Friend.username2==friend) \
+                .first()
+            db.delete(myFriend)
+
+            hisFriend = db.query(Friend) \
+                .filter(Friend.username1==friend) \
+                .filter(Friend.username2==username) \
+                .first()
+            db.delete(hisFriend)
+            db.commit()
+            return True
+        except:
+            db.close()
+            return False
 
     def updateUserInfo(self, firstName, lastName, country, email, username, password):
         db = Session()
@@ -307,8 +338,6 @@ class Persister():
             .delete()
         db.commit()
         db.close()
-    #.filter(Favorite.id == id) \
-
 
     def getFavorites(self, user):
         db = Session()
