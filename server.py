@@ -1,7 +1,7 @@
 import os
 from flask_login import LoginManager, current_user, login_required, logout_user
 from database import User
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, send_file, make_response, session
 import userApi, eventApi, categoryApi, registerForm, loginForm
 import sys, json
 from pymongo import MongoClient
@@ -10,13 +10,13 @@ from pymongo import MongoClient
 collection = MongoClient('localhost', 27017).travelbuddy.likes
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-login = LoginManager(app)
-login.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
-@login.user_loader
-def load_user(user_name):
-    return userApi.getUser(user_name)
+@login_manager.user_loader
+def load_user(username):
+    return userApi.getUser(username)
 
 
 @app.route('/api/user/getEvents', methods=['GET'])
@@ -93,12 +93,8 @@ def addEvent():
 def loginPageHandler():
      if current_user.is_authenticated:
          return render_template('index.html')
-     if loginForm.loginCheck(request.form):
-        flash("Ingelogd!")
-        return redirect('/profile')
      else:
-         print('faal', file=sys.stderr)
-         return redirect('/')
+        return jsonify({'value': True}),loginForm.loginUser(request.args)
 
 
 @app.route('/register', methods=['POST'])
@@ -133,6 +129,7 @@ def logout():
         return redirect('/login')
 
 
+
 @app.route('/api/loginName', methods=['GET'])
 def loginName():
     check = current_user.is_authenticated
@@ -151,25 +148,31 @@ def loginName():
         })
 
 
-@app.route('/api/loginEmail', methods=['GET'])
-def loginEmail():
-    check = current_user.is_authenticated
-    if check:
-        return jsonify({"yourEmail": current_user.email})
-    else:
-        return jsonify({"yourEmail": 'blah@blah.com'})
-
-
-@app.route('/api/user/friends', methods=['GET', 'POST'])
+@app.route('/friends')
 def friends():
-    username = request.args.get('name')
+    return render_template('index.html')
+
+
+@app.route('/api/user/friends',methods=['GET','POST'])
+def friendsMethods():
+    username = current_user.username
     if request.method == 'GET':
         friendList = userApi.getFriends(username)
         return jsonify({"friends": friendList})
     if request.method == 'POST':
-        friend = request.args.get('friend')
-        userApi.addFriend(username, friend)
-        return redirect('/profile')
+        friend = request.args.get('friend',None)
+        status = userApi.addFriend(username, friend)
+        return jsonify({"addfriend": status})
+
+@app.route('/api/user/friends/<name>',methods=['DELETE'])
+def deleteFriend(name):
+    username = current_user.username
+    if request.method == 'DELETE':
+        print('jij wilt deleten', file=sys.stderr)
+        status = userApi.deleteFriend(username, name)
+        return jsonify({"deleteStatus": status})
+        # return redirect('/')
+
 
 
 @app.route('/api/likes', methods=['GET', 'DELETE', 'POST'])
@@ -329,6 +332,10 @@ def getPreferences():
     else:
         return jsonify(False)
 
+# Get all users
+@app.route('/api/userList/', methods=['GET'])
+def getAllUsers():
+    return userApi.getAllUsers()
 
 # Submit and remove preference of user
 @app.route('/api/user/preferences', methods=['POST', 'DELETE'])
