@@ -31,7 +31,8 @@ def getFriends(name):
         country = user.country
         if country:
             country = persister.getCountry(country)[0]
-        result.append([user.firstName, user.lastName, country])
+        result.append([user.firstName, user.lastName, country, user.username]])
+
     return result
 
 
