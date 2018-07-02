@@ -71,10 +71,10 @@ def updateEvent():
             return redirect('/profile')
 
 
-# Submit event
+# Submitting & deleting events
 @app.route('/api/event', methods=['POST', 'DELETE'])
 @login_required
-def postEvent():
+def processEvent():
     if request.method == 'POST':
         return eventApi.postEvent(request)
     if request.method == 'DELETE':
@@ -370,4 +370,4 @@ def route(path):
 
 
 if __name__ == "__main__":
-    app.run(host='localhost', debug=True)
+    app.run(host='0.0.0.0', debug=True)
