@@ -28,13 +28,16 @@ def getFriends(name):
     result = []
     for user in friends:
         user = persister.getUser(user.Friend.username2)
-        result.append([user.firstName, user.lastName, user.country, user.username])
+        country = user.country
+        if country:
+            country = persister.getCountry(country)[0]
+        result.append([user.firstName, user.lastName, country, user.username]])
+
     return result
 
 
 def addFriend(username, friend):
-    status = persister.addFriend(username, friend)
-    return status
+    return persister.addFriend(username, friend)
 
 
 def updateUserInfo(form):
