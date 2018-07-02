@@ -2,25 +2,58 @@ from database import Persister, Event
 from flask import jsonify
 import os, time, json, sys
 from decimal import Decimal
+import checks
 
 persister = Persister()
 
 def postEvent(request):
-    form = request.form
+    form = request.args
+
+    location = form.get('location').strip()
+    name = form.get('name').strip()
+    description = form.get('description').strip()
+    startDate = form.get('startDate')
+    startTime = form.get('startTime')
+    endDate = form.get('endDate')
+    endTime = form.get('endTime')
+    owner = form.get('owner')
+    lng = form.get('lng')
+    lat = form.get('lat')
+
+    if checks.emptyCheck([location, name, description, startDate, startTime, endDate, endTime, owner, lng, lat]):
+        return jsonify({
+            "message": "Please, fill in all fields."
+        }), 400, {'ContentType': 'application/json'}
+
+    if checks.lengthSixtyFourCheck([name]):
+        return jsonify({
+            "message": "Please don't fill in more than 64 characters."
+        }), 400, {'ContentType': 'application/json'}
+
+    if checks.dateTimeCheck(startDate, startTime, endDate, endTime):
+        return jsonify({
+            "message": "A problem occurred with regards to the dates and times of this event.<br>"
+                   "Rules:<br>"
+                   "- Events that start later than 1 year from now are not allowed.<br>"
+                   "- The event's start date/time can't be later than the end date/time.<br>"
+                   "- You can't enter dates earlier than today.<br>"
+                   "- An event's length can't be longer than a year."
+        }), 400, {'ContentType': 'application/json'}
 
     if request.files.get('image', None):
         file = request.files.get('image', None)
-        name = str(time.time()).replace(".", "")
-        name = name + "." + file.filename.partition(".")[-1]
-        file.save(os.path.join('images\events', name))
+        img = str(time.time()).replace(".", "")
+        ext = file.filename.partition(".")[-1]
+        if not checks.imgExtensionCheck(ext):
+            return jsonify({
+                "message": "Only .png, .jpg or .jpeg  images are valid!"
+            }), 400, {'ContentType': 'application/json'}
+        img = img + "." + ext
+        file.save(os.path.join('images\events', img))
     else:
-        name = None
+        img = None
 
-    location = form.get('location')
-    print(location, file=sys.stderr)
     temp = location.split(', ')
-    print(temp, file=sys.stderr)
-
     country = None
     city = None
     address = None
@@ -29,36 +62,43 @@ def postEvent(request):
     if len(temp) > 0:
         city = temp.pop()
     if len(temp) > 0:
-        address = temp.pop()
+        address = ', '.join(temp)
 
     event = Event(
-        name=form.get('name'),
-        category=form.get('category'),
-        description=form.get('description'),
+        name=name,
+        description=description,
         address=address,
         city=city,
         country=country,
-        startDate=form.get('start_date'),
-        startTime=form.get('start_time'),
-        endDate=form.get('end_date'),
-        endTime=form.get('end_time'),
-        owner=form.get('owner'),
-        lng=form.get('lng'),
-        lat=form.get('lat'),
-        image=name
+        startDate=startDate,
+        startTime=startTime,
+        endDate=endDate,
+        endTime=endTime,
+        owner=owner,
+        lng=lng,
+        lat=lat,
+        image=img
     )
 
     persister.persist_object(event)
 
-    return "success"
+    return jsonify({
+        "message": "Event created! You can now view it in your profile."
+    }), 200, {'ContentType': 'application/json'}
 
 
 def updateEvent(request):
-    form = request
+    return persister.updateEvent(request)
 
-    persister.updateEvent(request)
 
-    return "success"
+def deleteEvent(request, username):
+    eventId = request.args.get('eventId', None)
+    if eventId:
+        return persister.deleteEvent(eventId, username)
+    else:
+        return jsonify({
+            "message": "No event id."
+        }), 400, {'ContentType': 'application/json'}
 
 
 def getEvent(id):
@@ -80,7 +120,6 @@ def getEvent(id):
 
     result = {
         'name': event.name,
-        'category': event.category,
         'description': event.description,
         'address': event.address,
         'city': event.city,
