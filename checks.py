@@ -35,25 +35,31 @@ def emptyCheck(items):
 # Returns True if end date and time are earlier than start date and time
 def dateTimeCheck(startDate, startTime, endDate, endTime):
     if not startDate == endDate or startDate < endDate:
+        print("1")
         return True
 
     if startDate == endDate:
         if endTime < startTime:
+            print("2")
             return True
         if endTime == startTime:
+            print("3")
             return True
 
     start = datetime.strptime(startDate, "%Y-%m-%d")
     end = datetime.strptime(endDate, "%Y-%m-%d")
-    currentTime = datetime.now() + timedelta(days=1)
+    currentTime = datetime.now() - timedelta(days=1)
 
-    if start > currentTime:
+    if start < currentTime:
+        print("4")
         return True
 
     if start.year > (currentTime.year+1):
+        print("5")
         return True
 
     if (end-start).days > 365:
+        print("6")
         return True
 
     return False
