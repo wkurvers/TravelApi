@@ -19,6 +19,12 @@ def registerSubmit(form):
     email = email.replace(" ", "")
     firstName = firstName.strip()
     lastName = lastName.strip()
+    firstName = firstName.lower()
+    lastName = lastName.lower()
+    country = country.lower()
+    email = email.lower()
+    username = username.lower()
+    password = password.lower()
 
     if checks.checkSpecialChars([username]):
         return jsonify({
