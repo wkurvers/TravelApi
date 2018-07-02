@@ -61,8 +61,15 @@ def postEvent(request):
         country = temp.pop()
     if len(temp) > 0:
         city = temp.pop()
+        if len(city.split(" ")) > 2:
+            temp2 = city.split(" ")
+            city = temp2.pop()
+            address = ", " + " ".join(temp2)
     if len(temp) > 0:
-        address = ', '.join(temp)
+        if address:
+            address = ', '.join(temp) + address
+        else:
+            address = ', '.join(temp)
 
     event = Event(
         name=name,
