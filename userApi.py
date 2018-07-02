@@ -27,7 +27,7 @@ def getFriends(name):
     result = []
     for user in friends:
         user = persister.getUser(user.Friend.username2)
-        result.append([user.firstName, user.lastName, user.country])
+        result.append([user.firstName, user.lastName, user.country, user.username])
     return result
 
 
