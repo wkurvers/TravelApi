@@ -133,16 +133,24 @@ class Persister():
 
     def persist_object(self, obj):
         db = Session()
-        db.add(obj)
-        db.commit()
+        try:
+            db.add(obj)
+            db.commit()
+        except:
+            db.close()
+            return False
         db.close()
+        return True
 
     def addFriend(self, username, friend):
         f1 = Friend(username1=username, username2=friend)
         f2 = Friend(username2=username, username1=friend)
-        self.persist_object(f1)
-        self.persist_object(f2)
-        return True
+        check1 = self.persist_object(f1)
+        check2 = self.persist_object(f2)
+
+        if check1 and check2:
+            return True
+        return False
 
 
     def remove_object(self, obj):

@@ -33,8 +33,7 @@ def getFriends(name):
 
 
 def addFriend(username, friend):
-    status = persister.addFriend(username, friend)
-    return status
+    return persister.addFriend(username, friend)
 
 
 def updateUserInfo(form):
