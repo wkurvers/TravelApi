@@ -154,6 +154,7 @@ def friends():
 
 
 @app.route('/api/user/friends',methods=['GET','POST'])
+@login_required
 def friendsMethods():
     username = current_user.username
     if request.method == 'GET':
