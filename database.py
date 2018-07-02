@@ -138,14 +138,12 @@ class Persister():
         db.close()
 
     def addFriend(self, username, friend):
-        db = Session()
-        try:
-         db.execute("INSERT INTO friend VALUES ('" + username + "', '" + friend + "'), ('" + friend + "', '" + username + "');")
-         db.commit()
-         return True
-        except:
-         db.close()
-         return False
+        f1 = Friend(username1=username, username2=friend)
+        f2 = Friend(username2=username, username1=friend)
+        self.persist_object(f1)
+        self.persist_object(f2)
+        return True
+
 
     def remove_object(self, obj):
         db = Session()
@@ -217,8 +215,8 @@ class Persister():
     def removePreference(self, id, name):
         db = Session()
         preference = db.query(Preference_User)\
-            .filter(Preference_User.user_username==name)\
-            .filter(Preference_User.category_id==int(id))\
+            .filter(Preference_User.user_username == name)\
+            .filter(Preference_User.category_id == int(id))\
             .first()
         db.delete(preference)
         db.commit()

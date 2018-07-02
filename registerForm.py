@@ -66,6 +66,8 @@ def registerSubmit(form):
     )
 
     persister.persist_object(user)
+    persister.addFriend(username, "Never Travel Alone")
+
     return jsonify({
         "message": "Welcome to TravelBuddy! You are now a member."
     }), 200, {'ContentType': 'application/json'}
